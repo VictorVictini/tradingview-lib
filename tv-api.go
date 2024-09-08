@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"encoding/json"
 	"errors"
@@ -38,11 +39,7 @@ func OpenConnection() error {
 		}
 	}()
 
-	if err := auth(); err != nil {
-		return err
-	}
-
-	return nil
+	return auth()
 }
 
 func AddRealtimeSymbols(symbols []string) error {
@@ -51,20 +48,24 @@ func AddRealtimeSymbols(symbols []string) error {
 		return err
 	}
 
-	if err := sendMessage("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...)); err != nil {
-		return err
-	}
-
-	return nil
+	return sendMessage("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
 }
 
 func RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
-    if err := sendMessage("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
-		return err
-	}
 
-	return nil
+	return sendMessage("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...))
+}
+func RequestMoreData(candleCount int) error {
+	time.Sleep(100 * time.Millisecond) //removing this stops history and requestMoreData from printing for some reason. Figure out why
+
+	/*
+		if err := sendMessage("request_more_data", append([]interface{}{csToken}, "s1", candleCount)); err != nil {
+			return err
+		}
+		return nil*/
+
+	return sendMessage("request_more_data", append([]interface{}{csToken}, "s1", candleCount))
 }
 
 func GetHistory(symbol string, timeframe string) error {
@@ -75,18 +76,18 @@ func GetHistory(symbol string, timeframe string) error {
 
 	seriesCounter++
 	series := "s" + strconv.Itoa(seriesCounter)
-	id := resolvedSymbols[symbol];
+	id := resolvedSymbols[symbol]
 
 	seriesMap[series] = symbol
-    if !seriesCreated {
-        seriesCreated = true;
+	if !seriesCreated {
+		seriesCreated = true
 
-        err := sendMessage("create_series", []interface{} {csToken, "s1", series, id, timeframe, maxHistoryCandles, ""});
+		err := sendMessage("create_series", []interface{}{csToken, "s1", series, id, timeframe, maxHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
-    } else {
-    	err := sendMessage("modify_series", []interface{} {csToken, "s1", series, id, timeframe, ""});
+	} else {
+		err := sendMessage("modify_series", []interface{}{csToken, "s1", series, id, timeframe, ""})
 		if err != nil {
 			return err
 		}
@@ -120,7 +121,12 @@ func sendMessage(name string, args []interface{}) error {
 	if ws == nil {
 		return errors.New("websocket is null")
 	}
-
+	/* debugging
+	fmt.Println("name : ", name)
+	for _, arg := range args {
+		fmt.Print(arg, ",")
+	}
+	fmt.Println()*/
 	message, err := json.Marshal(
 		map[string]interface{}{
 			"m": name,
@@ -132,7 +138,7 @@ func sendMessage(name string, args []interface{}) error {
 		return err
 	}
 
-	err = ws.WriteMessage(websocket.TextMessage, []byte("~m~" + strconv.Itoa(len(message)) + "~m~" + string(message)))
+	err = ws.WriteMessage(websocket.TextMessage, []byte("~m~"+strconv.Itoa(len(message))+"~m~"+string(message)))
 	if err != nil {
 		return err
 	}
@@ -149,7 +155,7 @@ func readMessage(buffer string) { // TODO better error handling
 		if err != nil {
 			// not json
 			if strings.Contains(msg, "~h~") {
-				err = ws.WriteMessage(websocket.TextMessage, []byte("~m~" + strconv.Itoa(len(msg)) + "~m~" + msg))
+				err = ws.WriteMessage(websocket.TextMessage, []byte("~m~"+strconv.Itoa(len(msg))+"~m~"+msg))
 
 				if err != nil {
 					fmt.Println(err) // print error, TODO but continue anyway? or crash?
@@ -212,12 +218,11 @@ func readMessage(buffer string) { // TODO better error handling
 				if !ok {
 					continue
 				}
-			
+
 				data, ok := dataElement["v"].([]interface{})
 				if !ok {
 					continue
 				}
-			
 				fmt.Println("the timestamp: ", data[0])
 				fmt.Println("open: ", data[1])
 				fmt.Println("high: ", data[2])
