@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"time"
 
 	"encoding/json"
@@ -48,14 +50,26 @@ func AddRealtimeSymbols(symbols []string) error {
 		return err
 	}
 
-	return sendMessage("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
+	for _, symbol := range symbols {
+		realtimeSymbols[symbol] = true
+	}
+
+	return quoteFastSymbols()
 }
 
 func RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
+	if err := sendMessage("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
+		return err
+	}
 
-	return sendMessage("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...))
+	for _, symbol := range symbols {
+		delete(realtimeSymbols, symbol)
+	}
+
+	return quoteFastSymbols()
 }
+
 func RequestMoreData(candleCount int) error {
 	time.Sleep(100 * time.Millisecond) //removing this stops history and requestMoreData from printing for some reason. Figure out why
 
@@ -68,8 +82,8 @@ func RequestMoreData(candleCount int) error {
 	return sendMessage("request_more_data", append([]interface{}{csToken}, "s1", candleCount))
 }
 
-func GetHistory(symbol string, timeframe string) error {
-	err := resolveSymbol(symbol)
+func GetHistory(symbol string, timeframe string, sessionType string) error {
+	err := resolveSymbol(symbol, sessionType)
 	if err != nil {
 		return err
 	}
@@ -82,7 +96,7 @@ func GetHistory(symbol string, timeframe string) error {
 	if !seriesCreated {
 		seriesCreated = true
 
-		err := sendMessage("create_series", []interface{}{csToken, "s1", series, id, timeframe, maxHistoryCandles, ""})
+		err := sendMessage("create_series", []interface{}{csToken, "s1", series, id, timeframe, initHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
@@ -94,6 +108,17 @@ func GetHistory(symbol string, timeframe string) error {
 	}
 
 	return nil
+}
+
+func SwitchTimezone(timezone string) error {
+	return sendMessage("switch_timezone", append([]interface{}{csToken}, timezone))
+}
+
+func quoteFastSymbols() error {
+	symbols := slices.Collect(maps.Keys(realtimeSymbols))
+	symbols_conv := convertStringArrToInterfaceArr(symbols)
+
+	return sendMessage("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
 }
 
 func auth() error {
@@ -208,7 +233,7 @@ func readMessage(buffer string) { // TODO better error handling
 
 			seriesId, ok := seriesInfo["t"].(string)
 			if !ok {
-				return
+				continue
 			}
 
 			// TODO actually do something

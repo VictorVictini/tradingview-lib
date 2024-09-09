@@ -11,6 +11,8 @@ var qsToken string = createToken()
 var qs string = "qs_" + qsToken
 var qssq string = "qs_snapshoter_basic-symbol-quotes_" + qsToken
 
+var realtimeSymbols map[string]bool = make(map[string]bool) // goofy hashset
+
 func createToken() string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	token := make([]byte, TOKEN_LENGTH)
