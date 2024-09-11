@@ -16,6 +16,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const SEPARATOR = "~m~"
+
 var ws *websocket.Conn // websocket connection
 var mu Container
 
@@ -98,12 +100,12 @@ func RemoveRealtimeSymbols(symbols []string) error {
 func RequestMoreData(candleCount int) error {
 
 	/*
-		if err := sendMessage("request_more_data", append([]interface{}{csToken}, "s1", candleCount)); err != nil {
+		if err := sendMessage("request_more_data", append([]interface{}{csToken}, "sds1", candleCount)); err != nil {
 			return err
 		}
 		return nil*/
 
-	return sendMessage("request_more_data", append([]interface{}{csToken}, "s1", candleCount))
+	return sendMessage("request_more_data", append([]interface{}{csToken}, "sds1", candleCount))
 }
 
 func GetHistory(symbol string, timeframe string, sessionType string) error {
@@ -120,7 +122,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 
 	if !seriesCreated {
 		seriesCreated = true
-		err := sendMessage("create_series", []interface{}{csToken, "s1", series, id, timeframe, initHistoryCandles, ""})
+		err := sendMessage("create_series", []interface{}{csToken, "sds1", series, id, timeframe, initHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
@@ -129,7 +131,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 			return err
 		}
 	} else {
-		err := sendMessage("modify_series", []interface{}{csToken, "s1", series, id, timeframe, ""})
+		err := sendMessage("modify_series", []interface{}{csToken, "sds1", series, id, timeframe, ""})
 		if err != nil {
 			return err
 		}
@@ -275,7 +277,7 @@ func readMessage(buffer string) { // TODO better error handling
 				continue
 			}
 
-			seriesInfo, ok := info["s1"].(map[string]interface{})
+			seriesInfo, ok := info["sds1"].(map[string]interface{})
 			if !ok {
 				continue
 			}
