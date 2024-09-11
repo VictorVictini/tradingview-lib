@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"maps"
 	"net/http"
 	"slices"
@@ -315,6 +316,10 @@ func readMessage(buffer string) { // TODO better error handling
 			}
 		} else if res["m"] == "series_completed" {
 			Unlock()
+		} else if res["m"] == "critical_error" {
+			log.Fatal("readMessage: TradingView Critical Error: ", msg)
+		} else if res["m"] == "protocol_error" {
+			log.Fatal("readMessage: TradingView Protocol Error: ", msg)
 		}
 	}
 }
