@@ -17,6 +17,7 @@ import (
 )
 
 const SEPARATOR = "~m~"
+const HISTORY_TOKEN = "sds_1"
 
 var ws *websocket.Conn // websocket connection
 var mu Container
@@ -98,14 +99,13 @@ func RemoveRealtimeSymbols(symbols []string) error {
 }
 
 func RequestMoreData(candleCount int) error {
-
-	/*
-		if err := sendMessage("request_more_data", append([]interface{}{csToken}, "sds1", candleCount)); err != nil {
-			return err
-		}
-		return nil*/
-
-	return sendMessage("request_more_data", append([]interface{}{csToken}, "sds1", candleCount))
+	err := sendMessage("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
+	if err != nil {
+		return err
+	}
+	return waitForMessage(5000 + candleCount)
+	//TODO: make this more efficient; possibly apply log math? I'm thinking since requesting an absurd amount of candles (e.g, 100k+), if an issue occurs it may take absurd amounts of time to just note a timeout.
+	//same for history; maybe pass some paa
 }
 
 func GetHistory(symbol string, timeframe string, sessionType string) error {
@@ -122,7 +122,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 
 	if !seriesCreated {
 		seriesCreated = true
-		err := sendMessage("create_series", []interface{}{csToken, "sds1", series, id, timeframe, initHistoryCandles, ""})
+		err := sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, timeframe, initHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 			return err
 		}
 	} else {
-		err := sendMessage("modify_series", []interface{}{csToken, "sds1", series, id, timeframe, ""})
+		err := sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, timeframe, ""})
 		if err != nil {
 			return err
 		}
@@ -219,7 +219,7 @@ func sendMessage(name string, args []interface{}) error {
 		return err
 	}
 
-	err = ws.WriteMessage(websocket.TextMessage, []byte("~m~"+strconv.Itoa(len(message))+"~m~"+string(message)))
+	err = ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(message))+SEPARATOR+string(message)))
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func readMessage(buffer string) { // TODO better error handling
 		if err != nil {
 			// not json
 			if strings.Contains(msg, "~h~") {
-				err = ws.WriteMessage(websocket.TextMessage, []byte("~m~"+strconv.Itoa(len(msg))+"~m~"+msg))
+				err = ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(msg))+SEPARATOR+msg))
 
 				if err != nil {
 					fmt.Println(err) // print error, TODO but continue anyway? or crash?
@@ -277,7 +277,7 @@ func readMessage(buffer string) { // TODO better error handling
 				continue
 			}
 
-			seriesInfo, ok := info["sds1"].(map[string]interface{})
+			seriesInfo, ok := info[HISTORY_TOKEN].(map[string]interface{})
 			if !ok {
 				continue
 			}
