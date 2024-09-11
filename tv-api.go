@@ -109,7 +109,7 @@ func RequestMoreData(candleCount int) error {
 	//same for history; maybe pass some paa
 }
 
-func GetHistory(symbol string, timeframe string, sessionType string) error {
+func GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
 	err := resolveSymbol(symbol, sessionType)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 
 	if !seriesCreated {
 		seriesCreated = true
-		err := sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, timeframe, initHistoryCandles, ""})
+		err := sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 			return err
 		}
 	} else {
-		err := sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, timeframe, ""})
+		err := sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 		if err != nil {
 			return err
 		}
