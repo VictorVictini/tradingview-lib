@@ -115,7 +115,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 	}
 
 	seriesCounter++
-	series := "s" + strconv.Itoa(seriesCounter)
+	series := "s" + strconv.FormatUint(seriesCounter, 10)
 	id := resolvedSymbols[symbol]
 
 	seriesMap[series] = symbol
@@ -258,8 +258,8 @@ func readMessage(buffer string) { // TODO better error handling
 				continue
 			}
 
-			fmt.Println("symbol: ", info["n"]) // TODO actually do something
-			if data, ok := info["v"].(map[string]interface{}); ok {
+			fmt.Println("symbol: ", info["n"])                      // TODO actually do something
+			if data, ok := info["v"].(map[string]interface{}); ok { // TODO some of these vals can be null, add a check for that
 				fmt.Println("volume: ", data["volume"])
 				fmt.Println("current price: ", data["lp"])
 				fmt.Println("change in price: ", data["ch"])
