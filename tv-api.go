@@ -5,6 +5,7 @@ import (
 	"maps"
 	"net/http"
 	"slices"
+	"sync"
 	"time"
 
 	"encoding/json"
@@ -16,6 +17,30 @@ import (
 )
 
 var ws *websocket.Conn // websocket connection
+var mu Container
+
+type Container struct { //mutex + check for state
+	mutex    sync.Mutex
+	isLocked bool
+}
+
+func Unlock() bool { //unlocking mutex
+	if !mu.isLocked { //failure: mutex is already unlocked
+		return false
+	}
+	mu.isLocked = false
+	mu.mutex.Unlock()
+	return true
+}
+
+func Lock() bool { //locking mutex
+	if mu.isLocked { //failure: mutex is already locked
+		return false
+	}
+	mu.isLocked = true
+	mu.mutex.Lock()
+	return true
+}
 
 func OpenConnection() error {
 	url := "wss://data.tradingview.com/socket.io/websocket"
@@ -71,7 +96,6 @@ func RemoveRealtimeSymbols(symbols []string) error {
 }
 
 func RequestMoreData(candleCount int) error {
-	time.Sleep(100 * time.Millisecond) //removing this stops history and requestMoreData from printing for some reason. Figure out why
 
 	/*
 		if err := sendMessage("request_more_data", append([]interface{}{csToken}, "s1", candleCount)); err != nil {
@@ -93,10 +117,14 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 	id := resolvedSymbols[symbol]
 
 	seriesMap[series] = symbol
+
 	if !seriesCreated {
 		seriesCreated = true
-
 		err := sendMessage("create_series", []interface{}{csToken, "s1", series, id, timeframe, initHistoryCandles, ""})
+		if err != nil {
+			return err
+		}
+		err = waitForMessage(5000)
 		if err != nil {
 			return err
 		}
@@ -105,8 +133,34 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 		if err != nil {
 			return err
 		}
+		err = waitForMessage(5000)
+		if err != nil {
+			return err
+		}
 	}
 
+	return nil
+}
+
+func waitForMessage(maxWait int) error { //Please replace; is just a waiter for a message
+
+	var lockstate = Lock()
+
+	if !lockstate {
+		fmt.Printf("Mutex is already locked")
+		return fmt.Errorf("Mutex is already locked")
+	}
+
+	start := time.Now()
+	for mu.isLocked && int(time.Since(start).Milliseconds()) <= maxWait {
+
+	}
+
+	lockstate = Unlock()
+	if lockstate {
+		fmt.Println("Timeout on waiting for message")
+		return fmt.Errorf("Timeout")
+	}
 	return nil
 }
 
@@ -257,6 +311,8 @@ func readMessage(buffer string) { // TODO better error handling
 					fmt.Println("volume: ", data[5])
 				}
 			}
+		} else if res["m"] == "series_completed" {
+			Unlock()
 		}
 	}
 }
