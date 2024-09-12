@@ -28,3 +28,9 @@ const (
 	SixMonths    Timeframe = "6M"
 	TwelveMonths Timeframe = "12M"
 )
+
+const SEPARATOR = "~m~"
+const HISTORY_TOKEN = "sds_1"
+
+const TOKEN_LENGTH = 12
+const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"

@@ -13,7 +13,7 @@ var initHistoryCandles int = 10 // amount of candles to load at the start, then 
 var resolvedSymbols map[string]string = make(map[string]string)
 var seriesMap map[string]string = make(map[string]string)
 
-func resolveSymbol(symbol string, sessionType SessionType) error { // session type can be either "regular" or "extended"
+func resolveSymbol(symbol string, sessionType SessionType) error {
 	if _, exists := resolvedSymbols[symbol]; exists {
 		return nil
 	}

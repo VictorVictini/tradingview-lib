@@ -1,2 +1,2 @@
 # tradingview library
-- run `go run .` after pulling the code
+- run `go run ./src` after pulling the code
