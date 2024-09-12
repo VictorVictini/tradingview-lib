@@ -4,8 +4,8 @@ import (
 	"strconv"
 )
 
-var symbolCounter int = 0
-var seriesCounter int = 0
+var symbolCounter uint64 = 0
+var seriesCounter uint64 = 0
 var seriesCreated bool = false
 
 var initHistoryCandles int = 10 // amount of candles to load at the start, then RequestMoreData can load more
@@ -13,15 +13,15 @@ var initHistoryCandles int = 10 // amount of candles to load at the start, then 
 var resolvedSymbols map[string]string = make(map[string]string)
 var seriesMap map[string]string = make(map[string]string)
 
-func resolveSymbol(symbol string, sessionType string) error { // session type can be either "regular" or "extended"
+func resolveSymbol(symbol string, sessionType SessionType) error { // session type can be either "regular" or "extended"
 	if _, exists := resolvedSymbols[symbol]; exists {
 		return nil
 	}
 
 	symbolCounter++
-	id := "symbol_" + strconv.Itoa(symbolCounter) //symbol id
+	id := "symbol_" + strconv.FormatUint(symbolCounter, 10) //symbol id
 
-	err := sendMessage("resolve_symbol", []interface{}{csToken, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + sessionType + "\"}"})
+	err := sendMessage("resolve_symbol", []interface{}{csToken, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"maps"
 	"net/http"
 	"slices"
@@ -108,21 +109,21 @@ func RequestMoreData(candleCount int) error {
 	//same for history; maybe pass some paa
 }
 
-func GetHistory(symbol string, timeframe string, sessionType string) error {
+func GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
 	err := resolveSymbol(symbol, sessionType)
 	if err != nil {
 		return err
 	}
 
 	seriesCounter++
-	series := "s" + strconv.Itoa(seriesCounter)
+	series := "s" + strconv.FormatUint(seriesCounter, 10)
 	id := resolvedSymbols[symbol]
 
 	seriesMap[series] = symbol
 
 	if !seriesCreated {
 		seriesCreated = true
-		err := sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, timeframe, initHistoryCandles, ""})
+		err := sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
@@ -131,7 +132,7 @@ func GetHistory(symbol string, timeframe string, sessionType string) error {
 			return err
 		}
 	} else {
-		err := sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, timeframe, ""})
+		err := sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 		if err != nil {
 			return err
 		}
@@ -258,8 +259,8 @@ func readMessage(buffer string) { // TODO better error handling
 				continue
 			}
 
-			fmt.Println("symbol: ", info["n"]) // TODO actually do something
-			if data, ok := info["v"].(map[string]interface{}); ok {
+			fmt.Println("symbol: ", info["n"])                      // TODO actually do something
+			if data, ok := info["v"].(map[string]interface{}); ok { // TODO some of these vals can be null, add a check for that
 				fmt.Println("volume: ", data["volume"])
 				fmt.Println("current price: ", data["lp"])
 				fmt.Println("change in price: ", data["ch"])
@@ -315,6 +316,10 @@ func readMessage(buffer string) { // TODO better error handling
 			}
 		} else if res["m"] == "series_completed" {
 			Unlock()
+		} else if res["m"] == "critical_error" {
+			log.Fatal("readMessage: TradingView Critical Error: ", msg)
+		} else if res["m"] == "protocol_error" {
+			log.Fatal("readMessage: TradingView Protocol Error: ", msg)
 		}
 	}
 }
