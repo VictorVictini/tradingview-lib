@@ -8,7 +8,10 @@ import (
 )
 
 type TV_API struct {
-	ws *websocket.Conn
+	ws      *websocket.Conn
+	readCh  chan []interface{}
+	writeCh chan []interface{}
+	errorCh chan error
 }
 
 /*
@@ -25,8 +28,11 @@ func (tv_api *TV_API) OpenConnection() error {
 		return err
 	}
 
-	// edit the struct to include the websocket
+	// fill in values for the struct
 	tv_api.ws = ws
+	tv_api.readCh = make(chan []interface{})
+	tv_api.writeCh = make(chan []interface{})
+	tv_api.errorCh = make(chan error)
 
 	// separate thread to actively read messages from the websocket
 	go tv_api.activeListener()
