@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"maps"
 	"net/http"
 	"slices"
@@ -63,7 +62,11 @@ func OpenConnection() error {
 				return // quit reading if error
 			}
 
-			readMessage(string(message))
+			err = readMessage(string(message))
+			if err != nil {
+				fmt.Println("OpenConnection: ", err)
+				return
+			}
 		}
 	}()
 
@@ -147,8 +150,7 @@ func waitForMessage(maxWait int) error { //Please replace; is just a waiter for 
 	var lockstate = Lock()
 
 	if !lockstate {
-		fmt.Printf("Mutex is already locked")
-		return fmt.Errorf("Mutex is already locked")
+		return errors.New("waitForMesssage: mutex is already locked")
 	}
 
 	start := time.Now()
@@ -158,8 +160,7 @@ func waitForMessage(maxWait int) error { //Please replace; is just a waiter for 
 
 	lockstate = Unlock()
 	if lockstate {
-		fmt.Println("Timeout on waiting for message")
-		return fmt.Errorf("Timeout")
+		return errors.New("waitForMessage: timeout on waiting for message")
 	}
 	return nil
 }
@@ -198,14 +199,9 @@ func auth() error {
 
 func sendMessage(name string, args []interface{}) error {
 	if ws == nil {
-		return errors.New("websocket is null")
+		return errors.New("sendMessage: websocket is null")
 	}
-	/* debugging
-	fmt.Println("name : ", name)
-	for _, arg := range args {
-		fmt.Print(arg, ",")
-	}
-	fmt.Println()*/
+
 	message, err := json.Marshal(
 		map[string]interface{}{
 			"m": name,
@@ -225,7 +221,7 @@ func sendMessage(name string, args []interface{}) error {
 	return nil
 }
 
-func readMessage(buffer string) { // TODO better error handling
+func readMessage(buffer string) error { // TODO better error handling
 	msgs := strings.Split(buffer, "~m~")
 	for _, msg := range msgs {
 		var res map[string]interface{}
@@ -237,7 +233,7 @@ func readMessage(buffer string) { // TODO better error handling
 				err = ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(msg))+SEPARATOR+msg))
 
 				if err != nil {
-					fmt.Println(err) // print error, TODO but continue anyway? or crash?
+					return err
 				}
 			}
 
@@ -314,9 +310,10 @@ func readMessage(buffer string) { // TODO better error handling
 		} else if res["m"] == "series_completed" {
 			Unlock()
 		} else if res["m"] == "critical_error" {
-			log.Fatal("readMessage: TradingView Critical Error: ", msg)
+			return errors.New("readMessage: TradingView Critical Error: " + msg)
 		} else if res["m"] == "protocol_error" {
-			log.Fatal("readMessage: TradingView Protocol Error: ", msg)
+			return errors.New("readMessage: TradingView Protocol Error: " + msg)
 		}
 	}
+	return nil
 }
