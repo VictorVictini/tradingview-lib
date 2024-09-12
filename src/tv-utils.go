@@ -1,4 +1,4 @@
-package main
+package tv_lib
 
 func convertStringArrToInterfaceArr(strArr []string) []interface{} {
 	inter := make([]interface{}, len(strArr))

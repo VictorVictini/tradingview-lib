@@ -1,4 +1,4 @@
-package main
+package tv_lib
 
 import (
 	"math/rand"
