@@ -1,4 +1,4 @@
-package tv_lib
+package main
 
 import (
 	"fmt"

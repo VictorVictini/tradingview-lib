@@ -1,4 +1,4 @@
-package tv_lib
+package main
 
 import (
 	"fmt"
@@ -16,9 +16,6 @@ import (
 
 	"github.com/gorilla/websocket"
 )
-
-const SEPARATOR = "~m~"
-const HISTORY_TOKEN = "sds_1"
 
 var ws *websocket.Conn // websocket connection
 var mu Container
