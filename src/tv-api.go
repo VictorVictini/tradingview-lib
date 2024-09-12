@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"maps"
-	"net/http"
 	"slices"
 	"sync"
 	"time"
@@ -16,7 +15,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var ws *websocket.Conn // websocket connection
 var mu Container
 
 type Container struct { //mutex + check for state
@@ -42,40 +40,9 @@ func Lock() bool { //locking mutex
 	return true
 }
 
-func OpenConnection() error {
-	url := "wss://data.tradingview.com/socket.io/websocket"
-	header := http.Header{}
-	header.Add("Origin", "https://www.tradingview.com")
-
-	var err error
-	ws, _, err = websocket.DefaultDialer.Dial(url, header)
-	if err != nil {
-		return err
-	}
-
-	// separate thread for the msgs
-	go func() { // TODO make things thread-safe
-		for {
-			_, message, err := ws.ReadMessage()
-			if err != nil {
-				fmt.Println("Read error: ", err)
-				return // quit reading if error
-			}
-
-			err = readMessage(string(message))
-			if err != nil {
-				fmt.Println("OpenConnection: ", err)
-				return
-			}
-		}
-	}()
-
-	return auth()
-}
-
-func AddRealtimeSymbols(symbols []string) error {
+func (tv_api *TV_API) AddRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
-	if err := sendMessage("quote_add_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
+	if err := tv_api.sendMessage("quote_add_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
 		return err
 	}
 
@@ -83,12 +50,12 @@ func AddRealtimeSymbols(symbols []string) error {
 		realtimeSymbols[symbol] = true
 	}
 
-	return quoteFastSymbols()
+	return tv_api.quoteFastSymbols()
 }
 
-func RemoveRealtimeSymbols(symbols []string) error {
+func (tv_api *TV_API) RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
-	if err := sendMessage("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
+	if err := tv_api.sendMessage("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
 		return err
 	}
 
@@ -96,11 +63,11 @@ func RemoveRealtimeSymbols(symbols []string) error {
 		delete(realtimeSymbols, symbol)
 	}
 
-	return quoteFastSymbols()
+	return tv_api.quoteFastSymbols()
 }
 
-func RequestMoreData(candleCount int) error {
-	err := sendMessage("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
+func (tv_api *TV_API) RequestMoreData(candleCount int) error {
+	err := tv_api.sendMessage("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
 	if err != nil {
 		return err
 	}
@@ -109,8 +76,8 @@ func RequestMoreData(candleCount int) error {
 	//same for history; maybe pass some paa
 }
 
-func GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
-	err := resolveSymbol(symbol, sessionType)
+func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
+	err := tv_api.resolveSymbol(symbol, sessionType)
 	if err != nil {
 		return err
 	}
@@ -123,7 +90,7 @@ func GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) err
 
 	if !seriesCreated {
 		seriesCreated = true
-		err := sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
+		err := tv_api.sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
@@ -132,7 +99,7 @@ func GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) err
 			return err
 		}
 	} else {
-		err := sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
+		err := tv_api.sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 		if err != nil {
 			return err
 		}
@@ -165,18 +132,18 @@ func waitForMessage(maxWait int) error { //Please replace; is just a waiter for 
 	return nil
 }
 
-func SwitchTimezone(timezone string) error {
-	return sendMessage("switch_timezone", append([]interface{}{csToken}, timezone))
+func (tv_api *TV_API) SwitchTimezone(timezone string) error {
+	return tv_api.sendMessage("switch_timezone", append([]interface{}{csToken}, timezone))
 }
 
-func quoteFastSymbols() error {
+func (tv_api *TV_API) quoteFastSymbols() error {
 	symbols := slices.Collect(maps.Keys(realtimeSymbols))
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
 
-	return sendMessage("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
+	return tv_api.sendMessage("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
 }
 
-func auth() error {
+func (tv_api *TV_API) auth() error {
 	authMsgs := []struct {
 		name string
 		args []interface{}
@@ -189,7 +156,7 @@ func auth() error {
 	}
 
 	for _, token := range authMsgs {
-		if err := sendMessage(token.name, token.args); err != nil {
+		if err := tv_api.sendMessage(token.name, token.args); err != nil {
 			return err
 		}
 	}
@@ -197,8 +164,8 @@ func auth() error {
 	return nil
 }
 
-func sendMessage(name string, args []interface{}) error {
-	if ws == nil {
+func (tv_api *TV_API) sendMessage(name string, args []interface{}) error {
+	if tv_api.ws == nil {
 		return errors.New("sendMessage: websocket is null")
 	}
 
@@ -213,7 +180,7 @@ func sendMessage(name string, args []interface{}) error {
 		return err
 	}
 
-	err = ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(message))+SEPARATOR+string(message)))
+	err = tv_api.ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(message))+SEPARATOR+string(message)))
 	if err != nil {
 		return err
 	}
@@ -221,7 +188,7 @@ func sendMessage(name string, args []interface{}) error {
 	return nil
 }
 
-func readMessage(buffer string) error { // TODO better error handling
+func (tv_api *TV_API) readMessage(buffer string) error { // TODO better error handling
 	msgs := strings.Split(buffer, "~m~")
 	for _, msg := range msgs {
 		var res map[string]interface{}
@@ -230,7 +197,7 @@ func readMessage(buffer string) error { // TODO better error handling
 		if err != nil {
 			// not json
 			if strings.Contains(msg, "~h~") {
-				err = ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(msg))+SEPARATOR+msg))
+				err = tv_api.ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(msg))+SEPARATOR+msg))
 
 				if err != nil {
 					return err

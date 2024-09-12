@@ -2,23 +2,31 @@ package main
 
 import (
 	"fmt"
+	"log"
 )
 
 func main() {
-	err := OpenConnection()
+	var tv_api TV_API
+	err := tv_api.OpenConnection()
 	if err != nil {
 		fmt.Println("Error: ", err)
 	} else {
-		//
 		var timeframe Timeframe = OneMinute
-		GetHistory("FOREXCOM:GBPJPY", timeframe, "regular")
-		//GetHistory("BATS:LLY", timeframe, "regular")
+		err := tv_api.GetHistory("FOREXCOM:GBPJPY", timeframe, "regular")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("DONESO")
+		err = tv_api.GetHistory("BATS:LLY", timeframe, "regular")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("getting history:")
 
-		//fmt.Println("getting history:")
-
-		//AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
-		//AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
-		//AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
+		err = tv_api.AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
+		if err != nil {
+			log.Fatal(err)
+		}
 		//GetHistory("FOREXCOM:GBPJPY", timeframe, "regular")
 		//AddRealtimeSymbols([]string{"FOREXCOM:GBPJPY"})
 		//GetHistory("BATS:LLY", timeframe, "regular")
