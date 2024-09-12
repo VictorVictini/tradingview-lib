@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"maps"
 	"slices"
 	"sync"
@@ -77,10 +76,7 @@ func (tv_api *TV_API) RequestMoreData(candleCount int) error {
 }
 
 func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
-	err := tv_api.resolveSymbol(symbol, sessionType)
-	if err != nil {
-		return err
-	}
+	tv_api.resolveSymbol(symbol, sessionType)
 
 	seriesCounter++
 	series := "s" + strconv.FormatUint(seriesCounter, 10)
@@ -219,14 +215,17 @@ func (tv_api *TV_API) readMessage(buffer string) error { // TODO better error ha
 				continue
 			}
 
-			fmt.Println("symbol: ", info["n"])                      // TODO actually do something
-			if data, ok := info["v"].(map[string]interface{}); ok { // TODO some of these vals can be null, add a check for that
-				fmt.Println("volume: ", data["volume"])
-				fmt.Println("current price: ", data["lp"])
-				fmt.Println("change in price: ", data["ch"])
-				fmt.Println("change in price %:", data["chp"])
-				fmt.Println("the timestamp: ", data["lp_time"])
+			var res map[string]interface{} = make(map[string]interface{})
+			res["symbol"] = info["n"]
+			if data, ok := info["v"].(map[string]interface{}); ok {
+				res["volume"] = data["volume"]
+				res["current_price"] = data["lp"]
+				res["price_change"] = data["ch"]
+				res["price_change_percentage"] = data["chp"]
+				res["timestamp"] = data["lp_time"]
 			}
+
+			tv_api.readCh <- res
 		} else if res["m"] == "timescale_update" { // get historical data
 			resp, ok := res["p"].([]interface{})
 			if !ok {
@@ -253,8 +252,9 @@ func (tv_api *TV_API) readMessage(buffer string) error { // TODO better error ha
 				continue
 			}
 
-			// TODO actually do something
-			fmt.Println("symbol: ", seriesMap[seriesId])
+			var res map[string]interface{} = make(map[string]interface{})
+			res["symbol"] = seriesMap[seriesId]
+			var timestamp, open, high, low, close, volume []interface{}
 			for _, dataElement := range allData {
 				dataElement, ok := dataElement.(map[string]interface{})
 				if !ok {
@@ -265,15 +265,27 @@ func (tv_api *TV_API) readMessage(buffer string) error { // TODO better error ha
 				if !ok {
 					continue
 				}
-				fmt.Println("the timestamp: ", data[0])
-				fmt.Println("open: ", data[1])
-				fmt.Println("high: ", data[2])
-				fmt.Println("low: ", data[3])
-				fmt.Println("close: ", data[4])
+
+				timestamp = append(timestamp, data[0])
+				open = append(open, data[1])
+				high = append(high, data[2])
+				low = append(low, data[3])
+				close = append(close, data[4])
 				if len(data) >= 6 {
-					fmt.Println("volume: ", data[5])
+					volume = append(volume, data[5])
+				} else {
+					volume = append(volume, nil)
 				}
 			}
+
+			res["timestamp"] = timestamp
+			res["open"] = open
+			res["high"] = high
+			res["low"] = low
+			res["close"] = close
+			res["volume"] = volume
+
+			tv_api.readCh <- res
 		} else if res["m"] == "series_completed" {
 			Unlock()
 		} else if res["m"] == "critical_error" {
