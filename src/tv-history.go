@@ -21,7 +21,7 @@ func (tv_api *TV_API) resolveSymbol(symbol string, sessionType SessionType) erro
 	symbolCounter++
 	id := "symbol_" + strconv.FormatUint(symbolCounter, 10) //symbol id
 
-	err := tv_api.sendMessage("resolve_symbol", []interface{}{csToken, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
+	err := tv_api.sendToWriteChannel("resolve_symbol", []interface{}{csToken, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
 	if err != nil {
 		return err
 	}
