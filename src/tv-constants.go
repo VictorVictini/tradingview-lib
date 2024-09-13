@@ -1,4 +1,4 @@
-package tv_api
+package tradingview
 
 // session data
 type SessionType string

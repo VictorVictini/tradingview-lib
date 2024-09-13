@@ -1,4 +1,4 @@
-package tv_api
+package tradingview
 
 import (
 	"encoding/json"
