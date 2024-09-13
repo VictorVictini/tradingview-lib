@@ -49,7 +49,7 @@ func (tv_api *TV_API) OpenConnection() error {
 	tv_api.readCh = make(chan map[string]interface{})
 	tv_api.writeCh = make(chan map[string]interface{})
 	tv_api.errorCh = make(chan error)
-	tv_api.errorCh = make(chan error)
+	tv_api.internalErrorCh = make(chan error)
 
 	// thread to actively read messages from the websocket to a channel
 	go tv_api.activeReadListener()
