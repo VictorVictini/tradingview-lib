@@ -42,3 +42,6 @@ const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
 // random constants
 const SEPARATOR = "~m~"
 const HISTORY_TOKEN = "sds_1"
+
+// history initial candles amount -- replace later
+const INITIAL_HISTORY_CANDLES = 10

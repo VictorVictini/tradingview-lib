@@ -11,40 +11,40 @@ import (
 
 func (tv_api *TV_API) RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
-	if err := tv_api.sendToWriteChannel("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
+	if err := tv_api.sendToWriteChannel("quote_remove_symbols", append([]interface{}{tv_api.qssq}, symbols_conv...)); err != nil {
 		return err
 	}
 
 	for _, symbol := range symbols {
-		delete(realtimeSymbols, symbol)
+		delete(tv_api.realtimeSymbols, symbol)
 	}
 
 	return tv_api.quoteFastSymbols()
 }
 
 func (tv_api *TV_API) RequestMoreData(candleCount int) error {
-	return tv_api.sendToWriteChannel("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
+	return tv_api.sendToWriteChannel("request_more_data", append([]interface{}{tv_api.csToken}, HISTORY_TOKEN, candleCount))
 }
 
 func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
 	tv_api.resolveSymbol(symbol, sessionType)
 
-	seriesCounter++
-	series := "s" + strconv.FormatUint(seriesCounter, 10)
-	id := resolvedSymbols[symbol]
+	tv_api.seriesCounter++
+	series := "s" + strconv.FormatUint(tv_api.seriesCounter, 10)
+	id := tv_api.resolvedSymbols[symbol]
 
-	seriesMap[series] = symbol
+	tv_api.seriesMap[series] = symbol
 
 	// possibly use sync.Once?
-	if !seriesCreated {
-		seriesCreated = true
-		return tv_api.sendToWriteChannel("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
+	if !tv_api.seriesCreated {
+		tv_api.seriesCreated = true
+		return tv_api.sendToWriteChannel("create_series", []interface{}{tv_api.csToken, HISTORY_TOKEN, series, id, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
 	}
-	return tv_api.sendToWriteChannel("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
+	return tv_api.sendToWriteChannel("modify_series", []interface{}{tv_api.csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 }
 
 func (tv_api *TV_API) SwitchTimezone(timezone string) error {
-	return tv_api.sendToWriteChannel("switch_timezone", append([]interface{}{csToken}, timezone))
+	return tv_api.sendToWriteChannel("switch_timezone", append([]interface{}{tv_api.csToken}, timezone))
 }
 
 func (tv_api *TV_API) auth() error {
@@ -53,10 +53,10 @@ func (tv_api *TV_API) auth() error {
 		args []interface{}
 	}{
 		{"set_auth_token", []interface{}{"unauthorized_user_token"}},
-		{"chart_create_session", []interface{}{csToken, ""}},
-		{"quote_create_session", []interface{}{qs}},
-		{"quote_create_session", []interface{}{qssq}},
-		{"quote_set_fields", []interface{}{qssq, "base-currency-logoid", "ch", "chp", "currency-logoid", "currency_code", "currency_id", "base_currency_id", "current_session", "description", "exchange", "format", "fractional", "is_tradable", "language", "local_description", "listed_exchange", "logoid", "lp", "lp_time", "minmov", "minmove2", "original_name", "pricescale", "pro_name", "short_name", "type", "typespecs", "update_mode", "volume", "variable_tick_size", "value_unit_id"}},
+		{"chart_create_session", []interface{}{tv_api.csToken, ""}},
+		{"quote_create_session", []interface{}{tv_api.qs}},
+		{"quote_create_session", []interface{}{tv_api.qssq}},
+		{"quote_set_fields", []interface{}{tv_api.qssq, "base-currency-logoid", "ch", "chp", "currency-logoid", "currency_code", "currency_id", "base_currency_id", "current_session", "description", "exchange", "format", "fractional", "is_tradable", "language", "local_description", "listed_exchange", "logoid", "lp", "lp_time", "minmov", "minmove2", "original_name", "pricescale", "pro_name", "short_name", "type", "typespecs", "update_mode", "volume", "variable_tick_size", "value_unit_id"}},
 	}
 
 	for _, token := range authMsgs {
@@ -161,7 +161,7 @@ func (tv_api *TV_API) readMessage(buffer string) error {
 			}
 
 			var res map[string]interface{} = make(map[string]interface{})
-			res["symbol"] = seriesMap[seriesId]
+			res["symbol"] = tv_api.seriesMap[seriesId]
 			var timestamp, open, high, low, close, volume []interface{}
 			for _, dataElement := range allData {
 				dataElement, ok := dataElement.(map[string]interface{})

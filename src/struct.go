@@ -14,12 +14,27 @@ import (
 Handles data associated with an instance of the websocket
 */
 type TV_API struct {
-	ws              *websocket.Conn
+	ws *websocket.Conn
+
 	readCh          chan map[string]interface{}
 	writeCh         chan map[string]interface{}
 	errorCh         chan error // receives errors that occurred in read/write threads
 	internalErrorCh chan error // internal handling of errors in read/write threads
-	halts           await_response
+
+	symbolCounter   uint64
+	seriesCounter   uint64
+	seriesCreated   bool // use sync.Once in clean up
+	resolvedSymbols map[string]string
+	seriesMap       map[string]string
+
+	csToken string
+	qsToken string
+	qs      string
+	qssq    string
+
+	realtimeSymbols map[string]bool
+
+	halts await_response
 }
 
 /*
@@ -47,10 +62,23 @@ func (tv_api *TV_API) OpenConnection() error {
 
 	// fill in values for the struct
 	tv_api.ws = ws
+
 	tv_api.readCh = make(chan map[string]interface{})
 	tv_api.writeCh = make(chan map[string]interface{})
 	tv_api.errorCh = make(chan error)
 	tv_api.internalErrorCh = make(chan error)
+
+	tv_api.symbolCounter = 0
+	tv_api.seriesCounter = 0
+	tv_api.seriesCreated = false // use sync.Once in clean up
+	tv_api.resolvedSymbols = make(map[string]string)
+	tv_api.seriesMap = make(map[string]string)
+
+	tv_api.csToken = "cs_" + createToken()
+	tv_api.qsToken = createToken()
+	tv_api.qs = "qs_" + tv_api.qsToken
+	tv_api.qssq = "qs_snapshoter_basic-symbol-quotes_" + tv_api.qsToken
+	tv_api.realtimeSymbols = make(map[string]bool)
 
 	// required responses for a given request being sent
 	// halts write requests from being sent until it is received
@@ -163,14 +191,14 @@ func (tv_api *TV_API) AddRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
 
 	// sending data we want to the server
-	err := tv_api.sendToWriteChannel("quote_add_symbols", append([]interface{}{qssq}, symbols_conv...))
+	err := tv_api.sendToWriteChannel("quote_add_symbols", append([]interface{}{tv_api.qssq}, symbols_conv...))
 	if err != nil {
 		return err
 	}
 
 	// add the symbols to the set of handled symbols
 	for _, symbol := range symbols {
-		realtimeSymbols[symbol] = true
+		tv_api.realtimeSymbols[symbol] = true
 	}
 
 	// tells server to start sending the symbols' real time data
@@ -182,9 +210,9 @@ Updates what real time stocks/symbols are being provided by the server
 */
 func (tv_api *TV_API) quoteFastSymbols() error {
 	// retrieve keys then convert the slice to []interface{}
-	symbols := slices.Collect(maps.Keys(realtimeSymbols))
+	symbols := slices.Collect(maps.Keys(tv_api.realtimeSymbols))
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
 
 	// send the request to the server
-	return tv_api.sendToWriteChannel("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
+	return tv_api.sendToWriteChannel("quote_fast_symbols", append([]interface{}{tv_api.qs}, symbols_conv...))
 }

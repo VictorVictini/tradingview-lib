@@ -4,28 +4,19 @@ import (
 	"strconv"
 )
 
-var symbolCounter uint64 = 0
-var seriesCounter uint64 = 0
-var seriesCreated bool = false
-
-var initHistoryCandles int = 10 // amount of candles to load at the start, then RequestMoreData can load more
-
-var resolvedSymbols map[string]string = make(map[string]string)
-var seriesMap map[string]string = make(map[string]string)
-
 func (tv_api *TV_API) resolveSymbol(symbol string, sessionType SessionType) error {
-	if _, exists := resolvedSymbols[symbol]; exists {
+	if _, exists := tv_api.resolvedSymbols[symbol]; exists {
 		return nil
 	}
 
-	symbolCounter++
-	id := "symbol_" + strconv.FormatUint(symbolCounter, 10) //symbol id
+	tv_api.symbolCounter++
+	id := "symbol_" + strconv.FormatUint(tv_api.symbolCounter, 10) //symbol id
 
-	err := tv_api.sendToWriteChannel("resolve_symbol", []interface{}{csToken, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
+	err := tv_api.sendToWriteChannel("resolve_symbol", []interface{}{tv_api.csToken, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
 	if err != nil {
 		return err
 	}
 
-	resolvedSymbols[symbol] = id
+	tv_api.resolvedSymbols[symbol] = id
 	return nil
 }
