@@ -1,4 +1,4 @@
-package main
+package tv_api
 
 // session data
 type SessionType string
