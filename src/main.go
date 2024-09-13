@@ -24,12 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Println("DONESO")
-	// err = tv_api.GetHistory("BATS:LLY", timeframe, "regular")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("getting history:")
+	fmt.Println("DONESO")
+	err = tv_api.GetHistory("BATS:LLY", timeframe, "regular")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("getting history:")
 
 	err = tv_api.AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
 	if err != nil {

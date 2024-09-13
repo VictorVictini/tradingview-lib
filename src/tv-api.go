@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -39,7 +40,7 @@ func Lock() bool { //locking mutex
 
 func (tv_api *TV_API) RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
-	if err := tv_api.sendMessage("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
+	if err := tv_api.sendToWriteChannel("quote_remove_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
 		return err
 	}
 
@@ -51,7 +52,7 @@ func (tv_api *TV_API) RemoveRealtimeSymbols(symbols []string) error {
 }
 
 func (tv_api *TV_API) RequestMoreData(candleCount int) error {
-	err := tv_api.sendMessage("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
+	err := tv_api.sendToWriteChannel("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
 	if err != nil {
 		return err
 	}
@@ -71,7 +72,7 @@ func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType
 
 	if !seriesCreated {
 		seriesCreated = true
-		err := tv_api.sendMessage("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
+		err := tv_api.sendToWriteChannel("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
 		if err != nil {
 			return err
 		}
@@ -80,7 +81,7 @@ func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType
 			return err
 		}
 	} else {
-		err := tv_api.sendMessage("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
+		err := tv_api.sendToWriteChannel("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 		if err != nil {
 			return err
 		}
@@ -114,7 +115,7 @@ func waitForMessage(maxWait int) error { //Please replace; is just a waiter for 
 }
 
 func (tv_api *TV_API) SwitchTimezone(timezone string) error {
-	return tv_api.sendMessage("switch_timezone", append([]interface{}{csToken}, timezone))
+	return tv_api.sendToWriteChannel("switch_timezone", append([]interface{}{csToken}, timezone))
 }
 
 func (tv_api *TV_API) auth() error {
@@ -130,7 +131,7 @@ func (tv_api *TV_API) auth() error {
 	}
 
 	for _, token := range authMsgs {
-		if err := tv_api.sendMessage(token.name, token.args); err != nil {
+		if err := tv_api.sendToWriteChannel(token.name, token.args); err != nil {
 			return err
 		}
 	}
@@ -139,6 +140,7 @@ func (tv_api *TV_API) auth() error {
 }
 
 func (tv_api *TV_API) sendMessage(name string, args []interface{}) error {
+	fmt.Printf("sendMessage: %s %#v\n", name, args)
 	if tv_api.ws == nil {
 		return errors.New("sendMessage: websocket is null")
 	}
@@ -163,6 +165,7 @@ func (tv_api *TV_API) sendMessage(name string, args []interface{}) error {
 }
 
 func (tv_api *TV_API) readMessage(buffer string) error { // TODO better error handling
+	fmt.Printf("readMessage: %s\n", buffer)
 	msgs := strings.Split(buffer, "~m~")
 	for _, msg := range msgs {
 		var res map[string]interface{}
