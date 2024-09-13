@@ -1,4 +1,4 @@
-module github.com/VictorVictini/tradingview-lib
+module github.com/VictorVictini/tradingview-lib/tv_api
 
 go 1.23.0
 
