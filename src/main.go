@@ -40,8 +40,15 @@ func main() {
 	//GetHistory("BATS:LLY", timeframe, "regular")
 	//SwitchTimezone("Europe/London")
 
-	//fmt.Println("getting more candles:")
-	//RequestMoreData(50)
+	fmt.Println("getting more candles:")
+	tv_api.RequestMoreData(5)
+	tv_api.RequestMoreData(5)
+	tv_api.RequestMoreData(5)
+	tv_api.RequestMoreData(5)
+	tv_api.RequestMoreData(5)
+	tv_api.RequestMoreData(5)
+	tv_api.RequestMoreData(5)
+	tv_api.RequestMoreData(5)
 	//GetHistory("FOREXCOM:GBPUSD", timeframe, "regular")
 
 	//time.Sleep(2 * time.Second)

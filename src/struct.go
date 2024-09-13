@@ -26,8 +26,9 @@ type TV_API struct {
 Handles waiting until a specific response is provided by the server
 */
 type await_response struct {
-	mu       sync.Mutex
-	haltedOn string
+	mu                sync.Mutex
+	requiredResponses map[string]string // halts write thread until the correlating response is provided by the server
+	haltedOn          string
 }
 
 /*
@@ -50,6 +51,17 @@ func (tv_api *TV_API) OpenConnection() error {
 	tv_api.writeCh = make(chan map[string]interface{})
 	tv_api.errorCh = make(chan error)
 	tv_api.internalErrorCh = make(chan error)
+
+	// required responses for a given request being sent
+	// halts write requests from being sent until it is received
+	tv_api.halts = await_response{
+		requiredResponses: map[string]string{
+			"create_series":     "series_completed",
+			"modify_series":     "series_completed",
+			"request_more_data": "series_completed",
+		},
+		haltedOn: "",
+	}
 
 	// thread to actively read messages from the websocket to a channel
 	go tv_api.activeReadListener()
@@ -121,13 +133,18 @@ func (tv_api *TV_API) activeWriteListener() {
 			continue
 		}
 
-		// mutex handling later
-
+		// handle errors from sending the data to the server
 		err := tv_api.sendMessage(name, args)
 		if err != nil {
 			tv_api.errorCh <- err
 		}
 		tv_api.internalErrorCh <- err
+
+		// lock the write thread until a given response is received (if necessary)
+		if haltedOn, ok := tv_api.halts.requiredResponses[name]; ok {
+			tv_api.halts.haltedOn = haltedOn
+			tv_api.halts.mu.Lock()
+		}
 	}
 }
 

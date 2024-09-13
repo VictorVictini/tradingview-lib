@@ -1,10 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"sync"
-	"time"
-
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -12,31 +8,6 @@ import (
 
 	"github.com/gorilla/websocket"
 )
-
-var mu Container
-
-type Container struct { //mutex + check for state
-	mutex    sync.Mutex
-	isLocked bool
-}
-
-func Unlock() bool { //unlocking mutex
-	if !mu.isLocked { //failure: mutex is already unlocked
-		return false
-	}
-	mu.isLocked = false
-	mu.mutex.Unlock()
-	return true
-}
-
-func Lock() bool { //locking mutex
-	if mu.isLocked { //failure: mutex is already locked
-		return false
-	}
-	mu.isLocked = true
-	mu.mutex.Lock()
-	return true
-}
 
 func (tv_api *TV_API) RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
@@ -52,13 +23,7 @@ func (tv_api *TV_API) RemoveRealtimeSymbols(symbols []string) error {
 }
 
 func (tv_api *TV_API) RequestMoreData(candleCount int) error {
-	err := tv_api.sendToWriteChannel("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
-	if err != nil {
-		return err
-	}
-	return waitForMessage(5000 + candleCount)
-	//TODO: make this more efficient; possibly apply log math? I'm thinking since requesting an absurd amount of candles (e.g, 100k+), if an issue occurs it may take absurd amounts of time to just note a timeout.
-	//same for history; maybe pass some paa
+	return tv_api.sendToWriteChannel("request_more_data", append([]interface{}{csToken}, HISTORY_TOKEN, candleCount))
 }
 
 func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
@@ -70,48 +35,12 @@ func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType
 
 	seriesMap[series] = symbol
 
+	// possibly use sync.Once?
 	if !seriesCreated {
 		seriesCreated = true
-		err := tv_api.sendToWriteChannel("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
-		if err != nil {
-			return err
-		}
-		err = waitForMessage(5000)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := tv_api.sendToWriteChannel("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
-		if err != nil {
-			return err
-		}
-		err = waitForMessage(5000)
-		if err != nil {
-			return err
-		}
+		return tv_api.sendToWriteChannel("create_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), initHistoryCandles, ""})
 	}
-
-	return nil
-}
-
-func waitForMessage(maxWait int) error { //Please replace; is just a waiter for a message
-
-	var lockstate = Lock()
-
-	if !lockstate {
-		return errors.New("waitForMesssage: mutex is already locked")
-	}
-
-	start := time.Now()
-	for mu.isLocked && int(time.Since(start).Milliseconds()) <= maxWait {
-
-	}
-
-	lockstate = Unlock()
-	if lockstate {
-		return errors.New("waitForMessage: timeout on waiting for message")
-	}
-	return nil
+	return tv_api.sendToWriteChannel("modify_series", []interface{}{csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 }
 
 func (tv_api *TV_API) SwitchTimezone(timezone string) error {
@@ -140,7 +69,6 @@ func (tv_api *TV_API) auth() error {
 }
 
 func (tv_api *TV_API) sendMessage(name string, args []interface{}) error {
-	fmt.Printf("sendMessage: %s %#v\n", name, args)
 	if tv_api.ws == nil {
 		return errors.New("sendMessage: websocket is null")
 	}
@@ -164,8 +92,7 @@ func (tv_api *TV_API) sendMessage(name string, args []interface{}) error {
 	return nil
 }
 
-func (tv_api *TV_API) readMessage(buffer string) error { // TODO better error handling
-	fmt.Printf("readMessage: %s\n", buffer)
+func (tv_api *TV_API) readMessage(buffer string) error {
 	msgs := strings.Split(buffer, "~m~")
 	for _, msg := range msgs {
 		var res map[string]interface{}
@@ -267,8 +194,9 @@ func (tv_api *TV_API) readMessage(buffer string) error { // TODO better error ha
 			res["volume"] = volume
 
 			tv_api.readCh <- res
-		} else if res["m"] == "series_completed" {
-			Unlock()
+		} else if tv_api.halts.haltedOn != "" && res["m"] == tv_api.halts.haltedOn {
+			tv_api.halts.mu.Unlock()
+			tv_api.halts.haltedOn = ""
 		} else if res["m"] == "critical_error" {
 			return errors.New("readMessage: TradingView Critical Error: " + msg)
 		} else if res["m"] == "protocol_error" {
