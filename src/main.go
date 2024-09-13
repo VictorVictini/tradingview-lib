@@ -24,12 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("DONESO")
+	// fmt.Println("DONESO")
 	err = tv_api.GetHistory("BATS:LLY", timeframe, "regular")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("getting history:")
+	// fmt.Println("getting history:")
 
 	err = tv_api.AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
 	if err != nil {
@@ -40,7 +40,7 @@ func main() {
 	//GetHistory("BATS:LLY", timeframe, "regular")
 	//SwitchTimezone("Europe/London")
 
-	fmt.Println("getting more candles:")
+	// fmt.Println("getting more candles:")
 	tv_api.RequestMoreData(5)
 	tv_api.RequestMoreData(5)
 	tv_api.RequestMoreData(5)
@@ -62,16 +62,16 @@ func ActiveReceiver(tv_api *TV_API) {
 	fmt.Println("activeReceiver enabled")
 	for {
 		select {
-		case data, ok := <-tv_api.readCh:
+		case data, ok := <-tv_api.ReadCh:
 			if !ok {
 				log.Fatal("read channel closed")
 			}
 			fmt.Println("received: ", data)
-		case errMsg, ok := <-tv_api.errorCh:
+		case errMsg, ok := <-tv_api.ErrorCh:
 			if !ok {
 				log.Fatal("error channel closed")
 			}
-			fmt.Println(errMsg)
+			fmt.Println("ActiveReceiver: ", errMsg)
 		}
 	}
 }

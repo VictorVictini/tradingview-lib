@@ -16,9 +16,9 @@ Handles data associated with an instance of the websocket
 type TV_API struct {
 	ws *websocket.Conn
 
-	readCh          chan map[string]interface{}
+	ReadCh          chan map[string]interface{}
 	writeCh         chan map[string]interface{}
-	errorCh         chan error // receives errors that occurred in read/write threads
+	ErrorCh         chan error // receives errors that occurred in read/write threads
 	internalErrorCh chan error // internal handling of errors in read/write threads
 
 	symbolCounter   uint64
@@ -60,12 +60,12 @@ func (tv_api *TV_API) OpenConnection() error {
 		return err
 	}
 
-	// fill in values for the struct
+	// initialise in values for the struct
 	tv_api.ws = ws
 
-	tv_api.readCh = make(chan map[string]interface{})
+	tv_api.ReadCh = make(chan map[string]interface{})
 	tv_api.writeCh = make(chan map[string]interface{})
-	tv_api.errorCh = make(chan error)
+	tv_api.ErrorCh = make(chan error)
 	tv_api.internalErrorCh = make(chan error)
 
 	tv_api.symbolCounter = 0
@@ -102,87 +102,6 @@ func (tv_api *TV_API) OpenConnection() error {
 }
 
 /*
-Active listener that receives data from the server
-which is later parsed then passed to the readCh channel
-*/
-func (tv_api *TV_API) activeReadListener() {
-	for {
-		_, message, err := tv_api.ws.ReadMessage()
-		if err != nil {
-			tv_api.errorCh <- err
-			return // quit reading if error
-		}
-
-		err = tv_api.readMessage(string(message))
-		if err != nil {
-			tv_api.errorCh <- err
-			return
-		}
-	}
-}
-
-/*
-Active listener that receives data from the writeCh channel
-which is later sent to the server at the next available instance
-*/
-func (tv_api *TV_API) activeWriteListener() {
-	for {
-		data, ok := <-tv_api.writeCh
-		if !ok {
-			err := errors.New("activeWriteListener: write channel is closed")
-			tv_api.internalErrorCh <- err
-			tv_api.errorCh <- err
-			return
-		}
-
-		// ensure the name is valid
-		_, ok = data["name"]
-		if !ok {
-			err := errors.New("activeWriteListener: \"name\" property not provided to the channel")
-			tv_api.internalErrorCh <- err
-			tv_api.errorCh <- err
-			continue
-		}
-		name, ok := data["name"].(string)
-		if !ok {
-			err := errors.New("activeWriteListener: \"name\" property is not of type string")
-			tv_api.internalErrorCh <- err
-			tv_api.errorCh <- err
-			continue
-		}
-
-		// ensure the arguments are valid
-		_, ok = data["args"]
-		if !ok {
-			err := errors.New("activeWriteListener: \"args\" property not provided to the channel")
-			tv_api.internalErrorCh <- err
-			tv_api.errorCh <- err
-			continue
-		}
-		args, ok := data["args"].([]interface{})
-		if !ok {
-			err := errors.New("activeWriteListener: \"args\" property is not of type []interface{}")
-			tv_api.internalErrorCh <- err
-			tv_api.errorCh <- err
-			continue
-		}
-
-		// handle errors from sending the data to the server
-		err := tv_api.sendMessage(name, args)
-		if err != nil {
-			tv_api.errorCh <- err
-		}
-		tv_api.internalErrorCh <- err
-
-		// lock the write thread until a given response is received (if necessary)
-		if haltedOn, ok := tv_api.halts.requiredResponses[name]; ok {
-			tv_api.halts.haltedOn = haltedOn
-			tv_api.halts.mu.Lock()
-		}
-	}
-}
-
-/*
 Retrieves real-time data for the given stocks/symbols
 which is then provided to the read channel
 */
@@ -203,6 +122,87 @@ func (tv_api *TV_API) AddRealtimeSymbols(symbols []string) error {
 
 	// tells server to start sending the symbols' real time data
 	return tv_api.quoteFastSymbols()
+}
+
+/*
+Active listener that receives data from the server
+which is later parsed then passed to the read channel
+*/
+func (tv_api *TV_API) activeReadListener() {
+	for {
+		_, message, err := tv_api.ws.ReadMessage()
+		if err != nil {
+			tv_api.ErrorCh <- err
+			return // quit reading if error
+		}
+
+		err = tv_api.readMessage(string(message))
+		if err != nil {
+			tv_api.ErrorCh <- err
+			return
+		}
+	}
+}
+
+/*
+Active listener that receives data from the writeCh channel
+which is later sent to the server at the next available instance
+*/
+func (tv_api *TV_API) activeWriteListener() {
+	for {
+		data, ok := <-tv_api.writeCh
+		if !ok {
+			err := errors.New("activeWriteListener: write channel is closed")
+			tv_api.internalErrorCh <- err
+			tv_api.ErrorCh <- err
+			return
+		}
+
+		// ensure the name is valid
+		_, ok = data["name"]
+		if !ok {
+			err := errors.New("activeWriteListener: \"name\" property not provided to the channel")
+			tv_api.internalErrorCh <- err
+			tv_api.ErrorCh <- err
+			continue
+		}
+		name, ok := data["name"].(string)
+		if !ok {
+			err := errors.New("activeWriteListener: \"name\" property is not of type string")
+			tv_api.internalErrorCh <- err
+			tv_api.ErrorCh <- err
+			continue
+		}
+
+		// ensure the arguments are valid
+		_, ok = data["args"]
+		if !ok {
+			err := errors.New("activeWriteListener: \"args\" property not provided to the channel")
+			tv_api.internalErrorCh <- err
+			tv_api.ErrorCh <- err
+			continue
+		}
+		args, ok := data["args"].([]interface{})
+		if !ok {
+			err := errors.New("activeWriteListener: \"args\" property is not of type []interface{}")
+			tv_api.internalErrorCh <- err
+			tv_api.ErrorCh <- err
+			continue
+		}
+
+		// handle errors from sending the data to the server
+		err := tv_api.sendMessage(name, args)
+		if err != nil {
+			tv_api.ErrorCh <- err
+		}
+		tv_api.internalErrorCh <- err
+
+		// lock the write thread until a given response is received (if necessary)
+		if haltedOn, ok := tv_api.halts.requiredResponses[name]; ok {
+			tv_api.halts.haltedOn = haltedOn
+			tv_api.halts.mu.Lock()
+		}
+	}
 }
 
 /*

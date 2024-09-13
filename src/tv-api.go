@@ -133,7 +133,7 @@ func (tv_api *TV_API) readMessage(buffer string) error {
 				res["timestamp"] = data["lp_time"]
 			}
 
-			tv_api.readCh <- res
+			tv_api.ReadCh <- res
 		} else if res["m"] == "timescale_update" { // get historical data
 			resp, ok := res["p"].([]interface{})
 			if !ok {
@@ -193,7 +193,7 @@ func (tv_api *TV_API) readMessage(buffer string) error {
 			res["close"] = close
 			res["volume"] = volume
 
-			tv_api.readCh <- res
+			tv_api.ReadCh <- res
 		} else if tv_api.halts.haltedOn != "" && res["m"] == tv_api.halts.haltedOn {
 			tv_api.halts.mu.Unlock()
 			tv_api.halts.haltedOn = ""
