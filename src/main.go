@@ -31,10 +31,10 @@ func main() {
 	// }
 	// fmt.Println("getting history:")
 
-	// err = tv_api.AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	err = tv_api.AddRealtimeSymbols([]string{"FOREXCOM:EURJPY"})
+	if err != nil {
+		log.Fatal(err)
+	}
 	//GetHistory("FOREXCOM:GBPJPY", timeframe, "regular")
 	//AddRealtimeSymbols([]string{"FOREXCOM:GBPJPY"})
 	//GetHistory("BATS:LLY", timeframe, "regular")

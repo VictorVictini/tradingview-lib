@@ -1,8 +1,6 @@
 package main
 
 import (
-	"maps"
-	"slices"
 	"sync"
 	"time"
 
@@ -37,19 +35,6 @@ func Lock() bool { //locking mutex
 	mu.isLocked = true
 	mu.mutex.Lock()
 	return true
-}
-
-func (tv_api *TV_API) AddRealtimeSymbols(symbols []string) error {
-	symbols_conv := convertStringArrToInterfaceArr(symbols)
-	if err := tv_api.sendMessage("quote_add_symbols", append([]interface{}{qssq}, symbols_conv...)); err != nil {
-		return err
-	}
-
-	for _, symbol := range symbols {
-		realtimeSymbols[symbol] = true
-	}
-
-	return tv_api.quoteFastSymbols()
 }
 
 func (tv_api *TV_API) RemoveRealtimeSymbols(symbols []string) error {
@@ -130,13 +115,6 @@ func waitForMessage(maxWait int) error { //Please replace; is just a waiter for 
 
 func (tv_api *TV_API) SwitchTimezone(timezone string) error {
 	return tv_api.sendMessage("switch_timezone", append([]interface{}{csToken}, timezone))
-}
-
-func (tv_api *TV_API) quoteFastSymbols() error {
-	symbols := slices.Collect(maps.Keys(realtimeSymbols))
-	symbols_conv := convertStringArrToInterfaceArr(symbols)
-
-	return tv_api.sendMessage("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
 }
 
 func (tv_api *TV_API) auth() error {

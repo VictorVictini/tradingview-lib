@@ -2,7 +2,9 @@ package main
 
 import (
 	"errors"
+	"maps"
 	"net/http"
+	"slices"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -12,11 +14,12 @@ import (
 Handles data associated with an instance of the websocket
 */
 type TV_API struct {
-	ws      *websocket.Conn
-	readCh  chan map[string]interface{}
-	writeCh chan map[string]interface{}
-	errorCh chan error // receives errors that occurred in read/write threads
-	halts   await_response
+	ws              *websocket.Conn
+	readCh          chan map[string]interface{}
+	writeCh         chan map[string]interface{}
+	errorCh         chan error // receives errors that occurred in read/write threads
+	internalErrorCh chan error // internal handling of errors in read/write threads
+	halts           await_response
 }
 
 /*
@@ -45,6 +48,7 @@ func (tv_api *TV_API) OpenConnection() error {
 	tv_api.ws = ws
 	tv_api.readCh = make(chan map[string]interface{})
 	tv_api.writeCh = make(chan map[string]interface{})
+	tv_api.errorCh = make(chan error)
 	tv_api.errorCh = make(chan error)
 
 	// thread to actively read messages from the websocket to a channel
@@ -80,38 +84,84 @@ func (tv_api *TV_API) activeReadListener() {
 /*
 Active listener that receives data from the writeCh channel
 which is later sent to the server at the next available instance
--- requires some thinking for error handling
 */
 func (tv_api *TV_API) activeWriteListener() {
 	for {
 		data := <-tv_api.writeCh
 
 		// ensure the name is valid
-		if data["name"] == nil {
-			tv_api.errorCh <- errors.New("activeWriteListener: \"name\" property not provided to the channel")
+		_, ok := data["name"]
+		if !ok {
+			err := errors.New("activeWriteListener: \"name\" property not provided to the channel")
+			tv_api.internalErrorCh <- err
+			tv_api.errorCh <- err
 			continue
 		}
 		name, ok := data["name"].(string)
 		if !ok {
-			tv_api.errorCh <- errors.New("activeWriteListener: \"name\" property is not of type string")
+			err := errors.New("activeWriteListener: \"name\" property is not of type string")
+			tv_api.internalErrorCh <- err
+			tv_api.errorCh <- err
 			continue
 		}
 
 		// ensure the arguments are valid
-		if data["args"] == nil {
-			tv_api.errorCh <- errors.New("activeWriteListener: \"args\" property not provided to the channel")
+		_, ok = data["args"]
+		if !ok {
+			err := errors.New("activeWriteListener: \"args\" property not provided to the channel")
+			tv_api.internalErrorCh <- err
+			tv_api.errorCh <- err
 			continue
 		}
 		args, ok := data["args"].([]interface{})
 		if !ok {
-			tv_api.errorCh <- errors.New("activeWriteListener: \"args\" property is not of type []interface{}")
+			err := errors.New("activeWriteListener: \"args\" property is not of type []interface{}")
+			tv_api.internalErrorCh <- err
+			tv_api.errorCh <- err
 			continue
 		}
 
 		// mutex handling later
 
-		if err := tv_api.sendMessage(name, args); err != nil {
+		err := tv_api.sendMessage(name, args)
+		if err != nil {
 			tv_api.errorCh <- err
 		}
+		tv_api.internalErrorCh <- err
 	}
+}
+
+/*
+Retrieves real-time data for the given stocks/symbols
+which is then provided to the read channel
+*/
+func (tv_api *TV_API) AddRealtimeSymbols(symbols []string) error {
+	// converts symbols from []string to []interface{}
+	symbols_conv := convertStringArrToInterfaceArr(symbols)
+
+	// sending data we want to the server
+	err := tv_api.sendToWriteChannel("quote_add_symbols", append([]interface{}{qssq}, symbols_conv...))
+	if err != nil {
+		return err
+	}
+
+	// add the symbols to the set of handled symbols
+	for _, symbol := range symbols {
+		realtimeSymbols[symbol] = true
+	}
+
+	// tells server to start sending the symbols' real time data
+	return tv_api.quoteFastSymbols()
+}
+
+/*
+Updates what real time stocks/symbols are being provided by the server
+*/
+func (tv_api *TV_API) quoteFastSymbols() error {
+	// retrieve keys then convert the slice to []interface{}
+	symbols := slices.Collect(maps.Keys(realtimeSymbols))
+	symbols_conv := convertStringArrToInterfaceArr(symbols)
+
+	// send the request to the server
+	return tv_api.sendToWriteChannel("quote_fast_symbols", append([]interface{}{qs}, symbols_conv...))
 }
