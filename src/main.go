@@ -62,9 +62,15 @@ func ActiveReceiver(tv_api *TV_API) {
 	fmt.Println("activeReceiver enabled")
 	for {
 		select {
-		case data := <-tv_api.readCh:
+		case data, ok := <-tv_api.readCh:
+			if !ok {
+				log.Fatal("read channel closed")
+			}
 			fmt.Println("received: ", data)
-		case errMsg := <-tv_api.errorCh:
+		case errMsg, ok := <-tv_api.errorCh:
+			if !ok {
+				log.Fatal("error channel closed")
+			}
 			fmt.Println(errMsg)
 		}
 	}

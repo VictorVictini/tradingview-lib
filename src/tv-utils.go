@@ -1,5 +1,7 @@
 package main
 
+import "errors"
+
 func convertStringArrToInterfaceArr(strArr []string) []interface{} {
 	inter := make([]interface{}, len(strArr))
 	for i := range strArr {
@@ -21,5 +23,9 @@ func (tv_api *TV_API) sendToWriteChannel(name string, args []interface{}) error 
 	}
 
 	// retrieve any error that has occurred
-	return <-tv_api.internalErrorCh
+	err, ok := <-tv_api.internalErrorCh
+	if !ok {
+		return errors.New("sendToWriteChannel: internal error channel is closed")
+	}
+	return err
 }

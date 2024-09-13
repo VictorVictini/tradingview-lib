@@ -99,10 +99,16 @@ which is later sent to the server at the next available instance
 */
 func (tv_api *TV_API) activeWriteListener() {
 	for {
-		data := <-tv_api.writeCh
+		data, ok := <-tv_api.writeCh
+		if !ok {
+			err := errors.New("activeWriteListener: write channel is closed")
+			tv_api.internalErrorCh <- err
+			tv_api.errorCh <- err
+			return
+		}
 
 		// ensure the name is valid
-		_, ok := data["name"]
+		_, ok = data["name"]
 		if !ok {
 			err := errors.New("activeWriteListener: \"name\" property not provided to the channel")
 			tv_api.internalErrorCh <- err
