@@ -26,26 +26,6 @@ func (api *API) RequestMoreData(candleCount int) error {
 	return api.sendWriteThread("request_more_data", append([]interface{}{api.csToken}, HISTORY_TOKEN, candleCount))
 }
 
-func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
-	err := api.resolveSymbol(symbol, sessionType)
-	if err != nil {
-		return err
-	}
-
-	api.seriesCounter++
-	series := "s" + strconv.FormatUint(api.seriesCounter, 10)
-	id := api.resolvedSymbols[symbol]
-
-	api.seriesMap[series] = symbol
-
-	// possibly use sync.Once?
-	if !api.seriesCreated {
-		api.seriesCreated = true
-		return api.sendWriteThread("create_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
-	}
-	return api.sendWriteThread("modify_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
-}
-
 func (api *API) SwitchTimezone(timezone string) error {
 	return api.sendWriteThread("switch_timezone", append([]interface{}{api.csToken}, timezone))
 }
