@@ -27,7 +27,10 @@ func (tv_api *TV_API) RequestMoreData(candleCount int) error {
 }
 
 func (tv_api *TV_API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
-	tv_api.resolveSymbol(symbol, sessionType)
+	err := tv_api.resolveSymbol(symbol, sessionType)
+	if err != nil {
+		return err
+	}
 
 	tv_api.seriesCounter++
 	series := "s" + strconv.FormatUint(tv_api.seriesCounter, 10)
