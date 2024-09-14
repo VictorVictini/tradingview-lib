@@ -87,6 +87,7 @@ func (tv_api *TV_API) OpenConnection() error {
 			"create_series":     "series_completed",
 			"modify_series":     "series_completed",
 			"request_more_data": "series_completed",
+			"resolve_symbol":    "symbol_resolved",
 		},
 		haltedOn: "",
 	}
