@@ -33,16 +33,16 @@ type API struct {
 
 	realtimeSymbols map[string]bool
 
-	halts await_response
+	halted halted
 }
 
 /*
 Handles waiting until a specific response is provided by the server
 */
-type await_response struct {
-	mu                sync.Mutex
+type halted struct {
+	mutex             sync.Mutex
 	requiredResponses map[string]string // halts write thread until the correlating response is provided by the server
-	haltedOn          string
+	on                string
 }
 
 /*
@@ -81,7 +81,7 @@ func (api *API) OpenConnection() error {
 
 	// required responses for a given request being sent
 	// halts write requests from being sent until it is received
-	api.halts = await_response{
+	api.halted = halted{
 		requiredResponses: map[string]string{
 			"create_series":     "series_completed",
 			"modify_series":     "series_completed",
@@ -89,7 +89,7 @@ func (api *API) OpenConnection() error {
 			"resolve_symbol":    "symbol_resolved",
 			"switch_timezone":   "tickmark_update",
 		},
-		haltedOn: "",
+		on: "",
 	}
 
 	// thread to actively read messages from the websocket to a channel

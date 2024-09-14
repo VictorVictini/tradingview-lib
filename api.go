@@ -177,9 +177,9 @@ func (api *API) readMessage(buffer string) error {
 			res["volume"] = volume
 
 			api.ReadCh <- res
-		} else if api.halts.haltedOn != "" && res["m"] == api.halts.haltedOn {
-			api.halts.mu.Unlock()
-			api.halts.haltedOn = ""
+		} else if api.halted.on != "" && res["m"] == api.halted.on {
+			api.halted.mutex.Unlock()
+			api.halted.on = ""
 		} else if res["m"] == "critical_error" {
 			return errors.New("readMessage: TradingView Critical Error: " + msg)
 		} else if res["m"] == "protocol_error" {

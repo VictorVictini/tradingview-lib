@@ -76,9 +76,9 @@ func (api *API) activeWriteListener() {
 		api.internalErrorCh <- err
 
 		// lock the write thread until a given response is received (if necessary)
-		if haltedOn, ok := api.halts.requiredResponses[name]; ok {
-			api.halts.haltedOn = haltedOn
-			api.halts.mu.Lock()
+		if haltedOn, ok := api.halted.requiredResponses[name]; ok {
+			api.halted.on = haltedOn
+			api.halted.mutex.Lock()
 		}
 	}
 }
