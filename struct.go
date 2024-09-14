@@ -32,6 +32,10 @@ type API struct {
 	halted halted
 }
 
+/*
+Handles data transferring between threads
+as well as the channels the user will be able to utilise
+*/
 type Channels struct {
 	Read          chan map[string]interface{}
 	write         chan map[string]interface{}
