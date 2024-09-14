@@ -88,6 +88,7 @@ func (tv_api *TV_API) OpenConnection() error {
 			"modify_series":     "series_completed",
 			"request_more_data": "series_completed",
 			"resolve_symbol":    "symbol_resolved",
+			"switch_timezone":   "tickmark_update",
 		},
 		haltedOn: "",
 	}
