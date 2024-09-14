@@ -15,7 +15,7 @@ func convertStringArrToInterfaceArr(strArr []string) []interface{} {
 Handles sending data to the write channel
 and retrieves an error if one occurred (otherwise nil)
 */
-func (api *API) sendToWriteChannel(name string, args []interface{}) error {
+func (api *API) sendWriteThread(name string, args []interface{}) error {
 	// send data to the write channel
 	api.writeCh <- map[string]interface{}{
 		"name": name,
@@ -25,7 +25,7 @@ func (api *API) sendToWriteChannel(name string, args []interface{}) error {
 	// retrieve any error that has occurred
 	err, ok := <-api.internalErrorCh
 	if !ok {
-		return errors.New("sendToWriteChannel: internal error channel is closed")
+		return errors.New("sendWriteThread: internal error channel is closed")
 	}
 	return err
 }

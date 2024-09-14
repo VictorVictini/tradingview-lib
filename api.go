@@ -11,7 +11,7 @@ import (
 
 func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
-	if err := api.sendToWriteChannel("quote_remove_symbols", append([]interface{}{api.qssq}, symbols_conv...)); err != nil {
+	if err := api.sendWriteThread("quote_remove_symbols", append([]interface{}{api.qssq}, symbols_conv...)); err != nil {
 		return err
 	}
 
@@ -23,7 +23,7 @@ func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 }
 
 func (api *API) RequestMoreData(candleCount int) error {
-	return api.sendToWriteChannel("request_more_data", append([]interface{}{api.csToken}, HISTORY_TOKEN, candleCount))
+	return api.sendWriteThread("request_more_data", append([]interface{}{api.csToken}, HISTORY_TOKEN, candleCount))
 }
 
 func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
@@ -41,13 +41,13 @@ func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType Sessi
 	// possibly use sync.Once?
 	if !api.seriesCreated {
 		api.seriesCreated = true
-		return api.sendToWriteChannel("create_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
+		return api.sendWriteThread("create_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
 	}
-	return api.sendToWriteChannel("modify_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
+	return api.sendWriteThread("modify_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 }
 
 func (api *API) SwitchTimezone(timezone string) error {
-	return api.sendToWriteChannel("switch_timezone", append([]interface{}{api.csToken}, timezone))
+	return api.sendWriteThread("switch_timezone", append([]interface{}{api.csToken}, timezone))
 }
 
 func (api *API) auth() error {
@@ -63,7 +63,7 @@ func (api *API) auth() error {
 	}
 
 	for _, token := range authMsgs {
-		if err := api.sendToWriteChannel(token.name, token.args); err != nil {
+		if err := api.sendWriteThread(token.name, token.args); err != nil {
 			return err
 		}
 	}

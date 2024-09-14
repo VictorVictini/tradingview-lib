@@ -112,7 +112,7 @@ func (api *API) AddRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
 
 	// sending data we want to the server
-	err := api.sendToWriteChannel("quote_add_symbols", append([]interface{}{api.qssq}, symbols_conv...))
+	err := api.sendWriteThread("quote_add_symbols", append([]interface{}{api.qssq}, symbols_conv...))
 	if err != nil {
 		return err
 	}
@@ -216,5 +216,5 @@ func (api *API) quoteFastSymbols() error {
 	symbols_conv := convertStringArrToInterfaceArr(symbols)
 
 	// send the request to the server
-	return api.sendToWriteChannel("quote_fast_symbols", append([]interface{}{api.qs}, symbols_conv...))
+	return api.sendWriteThread("quote_fast_symbols", append([]interface{}{api.qs}, symbols_conv...))
 }
