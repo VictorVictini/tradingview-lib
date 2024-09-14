@@ -1,5 +1,6 @@
-package main
+package tradingview
 
+// session data
 type SessionType string
 type Timeframe string
 
@@ -8,6 +9,7 @@ const (
 	Extended SessionType = "extended"
 )
 
+// timeframe data
 const (
 	OneMinute        Timeframe = "1"
 	ThreeMinutes     Timeframe = "3"
@@ -29,8 +31,17 @@ const (
 	TwelveMonths Timeframe = "12M"
 )
 
+// URL data for initialisation
+const TV_URL = "wss://data.tradingview.com/socket.io/websocket"
+const TV_ORIGIN_URL = "https://www.tradingview.com"
+
+// constants for token creation
+const TOKEN_LENGTH = 12
+const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+// random constants
 const SEPARATOR = "~m~"
 const HISTORY_TOKEN = "sds_1"
 
-const TOKEN_LENGTH = 12
-const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
+// history initial candles amount -- replace later
+const INITIAL_HISTORY_CANDLES = 10

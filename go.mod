@@ -1,4 +1,4 @@
-module go-projects/risk-calculator
+module github.com/VictorVictini/tradingview-lib
 
 go 1.23.0
 
