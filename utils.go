@@ -20,13 +20,13 @@ and retrieves an error if one occurred (otherwise nil)
 */
 func (api *API) sendWriteThread(name string, args []interface{}) error {
 	// send data to the write channel
-	api.writeCh <- map[string]interface{}{
+	api.Channels.write <- map[string]interface{}{
 		"name": name,
 		"args": args,
 	}
 
 	// retrieve any error that has occurred
-	err, ok := <-api.internalErrorCh
+	err, ok := <-api.Channels.internalError
 	if !ok {
 		return errors.New("sendWriteThread: internal error channel is closed")
 	}

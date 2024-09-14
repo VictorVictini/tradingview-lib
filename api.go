@@ -116,7 +116,7 @@ func (api *API) readMessage(buffer string) error {
 				res["timestamp"] = data["lp_time"]
 			}
 
-			api.ReadCh <- res
+			api.Channels.Read <- res
 		} else if res["m"] == "timescale_update" { // get historical data
 			resp, ok := res["p"].([]interface{})
 			if !ok {
@@ -176,7 +176,7 @@ func (api *API) readMessage(buffer string) error {
 			res["close"] = close
 			res["volume"] = volume
 
-			api.ReadCh <- res
+			api.Channels.Read <- res
 		} else if api.halted.on != "" && res["m"] == api.halted.on {
 			api.halted.mutex.Unlock()
 			api.halted.on = ""

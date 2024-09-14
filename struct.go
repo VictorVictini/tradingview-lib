@@ -13,12 +13,8 @@ import (
 Handles data associated with an instance of the websocket
 */
 type API struct {
-	ws *websocket.Conn
-
-	ReadCh          chan map[string]interface{}
-	writeCh         chan map[string]interface{}
-	ErrorCh         chan error // receives errors that occurred in read/write threads
-	internalErrorCh chan error // internal handling of errors in read/write threads
+	ws       *websocket.Conn
+	Channels Channels
 
 	symbolCounter   uint64
 	seriesCounter   uint64
@@ -34,6 +30,13 @@ type API struct {
 	realtimeSymbols map[string]bool
 
 	halted halted
+}
+
+type Channels struct {
+	Read          chan map[string]interface{}
+	write         chan map[string]interface{}
+	Error         chan error // receives errors that occurred in read/write threads
+	internalError chan error // internal handling of errors in read/write threads
 }
 
 /*
@@ -62,10 +65,10 @@ func (api *API) OpenConnection() error {
 	// initialise in values for the struct
 	api.ws = ws
 
-	api.ReadCh = make(chan map[string]interface{})
-	api.writeCh = make(chan map[string]interface{})
-	api.ErrorCh = make(chan error)
-	api.internalErrorCh = make(chan error)
+	api.Channels.Read = make(chan map[string]interface{})
+	api.Channels.write = make(chan map[string]interface{})
+	api.Channels.Error = make(chan error)
+	api.Channels.internalError = make(chan error)
 
 	api.symbolCounter = 0
 	api.seriesCounter = 0

@@ -10,13 +10,13 @@ func (api *API) activeReadListener() {
 	for {
 		_, message, err := api.ws.ReadMessage()
 		if err != nil {
-			api.ErrorCh <- err
+			api.Channels.Error <- err
 			return // quit reading if error
 		}
 
 		err = api.readMessage(string(message))
 		if err != nil {
-			api.ErrorCh <- err
+			api.Channels.Error <- err
 			return
 		}
 	}
@@ -28,11 +28,11 @@ which is later sent to the server at the next available instance
 */
 func (api *API) activeWriteListener() {
 	for {
-		data, ok := <-api.writeCh
+		data, ok := <-api.Channels.write
 		if !ok {
 			err := errors.New("activeWriteListener: write channel is closed")
-			api.internalErrorCh <- err
-			api.ErrorCh <- err
+			api.Channels.internalError <- err
+			api.Channels.Error <- err
 			return
 		}
 
@@ -40,15 +40,15 @@ func (api *API) activeWriteListener() {
 		_, ok = data["name"]
 		if !ok {
 			err := errors.New("activeWriteListener: \"name\" property not provided to the channel")
-			api.internalErrorCh <- err
-			api.ErrorCh <- err
+			api.Channels.internalError <- err
+			api.Channels.Error <- err
 			continue
 		}
 		name, ok := data["name"].(string)
 		if !ok {
 			err := errors.New("activeWriteListener: \"name\" property is not of type string")
-			api.internalErrorCh <- err
-			api.ErrorCh <- err
+			api.Channels.internalError <- err
+			api.Channels.Error <- err
 			continue
 		}
 
@@ -56,24 +56,24 @@ func (api *API) activeWriteListener() {
 		_, ok = data["args"]
 		if !ok {
 			err := errors.New("activeWriteListener: \"args\" property not provided to the channel")
-			api.internalErrorCh <- err
-			api.ErrorCh <- err
+			api.Channels.internalError <- err
+			api.Channels.Error <- err
 			continue
 		}
 		args, ok := data["args"].([]interface{})
 		if !ok {
 			err := errors.New("activeWriteListener: \"args\" property is not of type []interface{}")
-			api.internalErrorCh <- err
-			api.ErrorCh <- err
+			api.Channels.internalError <- err
+			api.Channels.Error <- err
 			continue
 		}
 
 		// handle errors from sending the data to the server
 		err := api.sendMessage(name, args)
 		if err != nil {
-			api.ErrorCh <- err
+			api.Channels.Error <- err
 		}
-		api.internalErrorCh <- err
+		api.Channels.internalError <- err
 
 		// lock the write thread until a given response is received (if necessary)
 		if haltedOn, ok := api.halted.requiredResponses[name]; ok {
