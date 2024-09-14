@@ -1,8 +1,6 @@
 package tradingview
 
-import (
-	"strconv"
-)
+import "strconv"
 
 func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
 	err := api.resolveSymbol(symbol, sessionType)

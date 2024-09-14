@@ -1,6 +1,9 @@
 package tradingview
 
-import "errors"
+import (
+	"errors"
+	"math/rand"
+)
 
 func convertStringArrToInterfaceArr(strArr []string) []interface{} {
 	inter := make([]interface{}, len(strArr))
@@ -28,4 +31,15 @@ func (api *API) sendWriteThread(name string, args []interface{}) error {
 		return errors.New("sendWriteThread: internal error channel is closed")
 	}
 	return err
+}
+
+func createToken() string {
+	token := make([]byte, TOKEN_LENGTH)
+
+	for i := range token {
+		randomIndex := rand.Intn(len(TOKEN_CHARS))
+		token[i] = TOKEN_CHARS[randomIndex]
+	}
+
+	return string(token)
 }
