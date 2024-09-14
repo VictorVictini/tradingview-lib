@@ -69,6 +69,7 @@ func (api *API) OpenConnection() error {
 	// initialise in values for the struct
 	api.ws = ws
 
+	// manages channels for the user to access as well as internal channels
 	api.Channels = Channels{
 		Read:          make(chan map[string]interface{}),
 		write:         make(chan map[string]interface{}),
