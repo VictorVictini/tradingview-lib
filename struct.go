@@ -69,10 +69,12 @@ func (api *API) OpenConnection() error {
 	// initialise in values for the struct
 	api.ws = ws
 
-	api.Channels.Read = make(chan map[string]interface{})
-	api.Channels.write = make(chan map[string]interface{})
-	api.Channels.Error = make(chan error)
-	api.Channels.internalError = make(chan error)
+	api.Channels = Channels{
+		Read:          make(chan map[string]interface{}),
+		write:         make(chan map[string]interface{}),
+		Error:         make(chan error),
+		internalError: make(chan error),
+	}
 
 	api.symbolCounter = 0
 	api.seriesCounter = 0
