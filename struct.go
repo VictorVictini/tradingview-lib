@@ -108,7 +108,7 @@ which is then provided to the read channel
 */
 func (api *API) AddRealtimeSymbols(symbols []string) error {
 	// converts symbols from []string to []interface{}
-	symbols_conv := convertStringArrToInterfaceArr(symbols)
+	symbols_conv := convertInterfaceArr(symbols)
 
 	// sending data we want to the server
 	err := api.sendWriteThread("quote_add_symbols", append([]interface{}{api.qssq}, symbols_conv...))
@@ -131,7 +131,7 @@ Updates what real time stocks/symbols are being provided by the server
 func (api *API) quoteFastSymbols() error {
 	// retrieve keys then convert the slice to []interface{}
 	symbols := slices.Collect(maps.Keys(api.realtimeSymbols))
-	symbols_conv := convertStringArrToInterfaceArr(symbols)
+	symbols_conv := convertInterfaceArr(symbols)
 
 	// send the request to the server
 	return api.sendWriteThread("quote_fast_symbols", append([]interface{}{api.qs}, symbols_conv...))

@@ -10,7 +10,7 @@ import (
 )
 
 func (api *API) RemoveRealtimeSymbols(symbols []string) error {
-	symbols_conv := convertStringArrToInterfaceArr(symbols)
+	symbols_conv := convertInterfaceArr(symbols)
 	if err := api.sendWriteThread("quote_remove_symbols", append([]interface{}{api.qssq}, symbols_conv...)); err != nil {
 		return err
 	}

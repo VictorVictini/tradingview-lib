@@ -5,7 +5,7 @@ import (
 	"math/rand"
 )
 
-func convertStringArrToInterfaceArr(strArr []string) []interface{} {
+func convertInterfaceArr(strArr []string) []interface{} {
 	inter := make([]interface{}, len(strArr))
 	for i := range strArr {
 		inter[i] = strArr[i]
