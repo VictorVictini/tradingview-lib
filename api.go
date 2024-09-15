@@ -63,7 +63,6 @@ func (api *API) parseServerMessage(buffer string) error {
 		}
 
 		// the message was valid JSON
-
 		// unlock the mutex if the requested string has been returned by the server
 		if api.halted.on != "" && res["m"] == api.halted.on {
 			api.halted.mutex.Unlock()
@@ -79,7 +78,6 @@ func (api *API) parseServerMessage(buffer string) error {
 
 func (api *API) handler(data map[string]interface{}, msg string) error {
 	switch data["m"] {
-
 	// if the server provided realtime price changes
 	case "qsd":
 		// ensure the data is in a valid format
@@ -108,7 +106,6 @@ func (api *API) handler(data map[string]interface{}, msg string) error {
 
 		// get historical data
 	case "timescale_update":
-
 		// ensure the data is in a valid format
 		resp, ok := data["p"].([]interface{})
 		if !ok {
@@ -179,7 +176,6 @@ func (api *API) handler(data map[string]interface{}, msg string) error {
 		return errors.New("parseServerMessage: TradingView Critical Error: " + msg)
 	case "protocol_error":
 		return errors.New("parseServerMessage: TradingView Protocol Error: " + msg)
-
 	}
 	return nil
 }
