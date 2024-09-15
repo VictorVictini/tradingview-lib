@@ -10,7 +10,7 @@ func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType Sessi
 
 	api.series.counter++
 	series := "s" + strconv.FormatUint(api.series.counter, 10)
-	id := api.resolvedSymbols[symbol]
+	id := api.symbols.resolvedIDs[symbol]
 
 	api.series.mapsSymbols[series] = symbol
 
@@ -27,18 +27,18 @@ func (api *API) RequestMoreData(candleCount int) error {
 }
 
 func (api *API) resolveSymbol(symbol string, sessionType SessionType) error {
-	if _, exists := api.resolvedSymbols[symbol]; exists {
+	if _, exists := api.symbols.resolvedIDs[symbol]; exists {
 		return nil
 	}
 
-	api.symbolCounter++
-	id := "symbol_" + strconv.FormatUint(api.symbolCounter, 10) //symbol id
+	api.symbols.counter++
+	id := "symbol_" + strconv.FormatUint(api.symbols.counter, 10) //symbol id
 
 	err := api.sendWriteThread("resolve_symbol", []interface{}{api.csToken, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
 	if err != nil {
 		return err
 	}
 
-	api.resolvedSymbols[symbol] = id
+	api.symbols.resolvedIDs[symbol] = id
 	return nil
 }

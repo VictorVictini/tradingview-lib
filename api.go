@@ -16,7 +16,7 @@ func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 	}
 
 	for _, symbol := range symbols {
-		delete(api.realtimeSymbols, symbol)
+		delete(api.symbols.resolvedIDs, symbol)
 	}
 
 	return api.quoteFastSymbols()

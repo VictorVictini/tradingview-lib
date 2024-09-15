@@ -16,17 +16,13 @@ type API struct {
 	ws       *websocket.Conn
 	Channels Channels
 
-	series series
-
-	symbolCounter   uint64
-	resolvedSymbols map[string]string
+	series  series
+	symbols symbols
 
 	csToken string
 	qsToken string
 	qs      string
 	qssq    string
-
-	realtimeSymbols map[string]bool
 
 	halted halted
 }
@@ -49,6 +45,15 @@ type series struct {
 	counter     uint64
 	wasCreated  bool
 	mapsSymbols map[string]string // maps a series to a correlating symbol
+}
+
+/*
+Handles data related to symbols
+*/
+type symbols struct {
+	counter     uint64
+	resolvedIDs map[string]string // correlating IDs for the given symbols
+	realtimeSet map[string]bool   // set of all currently active realtime symbols
 }
 
 /*
@@ -93,20 +98,22 @@ func (api *API) OpenConnection() error {
 		internalError: make(chan error),
 	}
 
-	api.symbolCounter = 0
-	api.resolvedSymbols = make(map[string]string)
-
 	api.series = series{
 		counter:     0,
 		wasCreated:  false,
 		mapsSymbols: make(map[string]string),
 	}
 
+	api.symbols = symbols{
+		counter:     0,
+		resolvedIDs: make(map[string]string),
+		realtimeSet: make(map[string]bool),
+	}
+
 	api.csToken = "cs_" + createToken()
 	api.qsToken = createToken()
 	api.qs = "qs_" + api.qsToken
 	api.qssq = "qs_snapshoter_basic-symbol-quotes_" + api.qsToken
-	api.realtimeSymbols = make(map[string]bool)
 
 	// required responses for a given request being sent
 	// halts write requests from being sent until it is received
@@ -147,7 +154,7 @@ func (api *API) AddRealtimeSymbols(symbols []string) error {
 
 	// add the symbols to the set of handled symbols
 	for _, symbol := range symbols {
-		api.realtimeSymbols[symbol] = true
+		api.symbols.realtimeSet[symbol] = true
 	}
 
 	// tells server to start sending the symbols' real time data
@@ -159,7 +166,7 @@ Updates what real time stocks/symbols are being provided by the server
 */
 func (api *API) quoteFastSymbols() error {
 	// retrieve keys then convert the slice to []interface{}
-	symbols := slices.Collect(maps.Keys(api.realtimeSymbols))
+	symbols := slices.Collect(maps.Keys(api.symbols.realtimeSet))
 	symbols_conv := convertInterfaceArr(symbols)
 
 	// send the request to the server
