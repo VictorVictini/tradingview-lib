@@ -37,7 +37,7 @@ func (api *API) activeWriteListener() {
 		}
 
 		// handle errors from sending the data to the server
-		err := api.sendMessage(data.name, data.args)
+		err := api.sendServer(data.name, data.args)
 		if err != nil {
 			api.Channels.Error <- err
 		}
