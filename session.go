@@ -99,13 +99,13 @@ func (api *API) AddRealtimeSymbols(symbols []string) error {
 	}
 
 	// tells server to start sending the symbols' real time data
-	return api.quoteFastSymbols()
+	return api.updateRealtimeSymbols()
 }
 
 /*
 Updates what real time stocks/symbols are being provided by the server
 */
-func (api *API) quoteFastSymbols() error {
+func (api *API) updateRealtimeSymbols() error {
 	// retrieve keys then convert the slice to []interface{}
 	symbols := slices.Collect(maps.Keys(api.symbols.realtimeSet))
 	symbols_conv := convertInterfaceArr(symbols)

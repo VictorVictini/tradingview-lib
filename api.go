@@ -19,7 +19,7 @@ func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 		delete(api.symbols.resolvedIDs, symbol)
 	}
 
-	return api.quoteFastSymbols()
+	return api.updateRealtimeSymbols()
 }
 
 func (api *API) SwitchTimezone(timezone string) error {
