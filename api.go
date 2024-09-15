@@ -44,9 +44,9 @@ func (api *API) auth() error {
 	return nil
 }
 
-func (api *API) sendServer(name string, args []interface{}) error {
+func (api *API) sendServerMessage(name string, args []interface{}) error {
 	if api.ws == nil {
-		return errors.New("sendServer: websocket is null")
+		return errors.New("sendServerMessage: websocket is null")
 	}
 
 	message, err := json.Marshal(
