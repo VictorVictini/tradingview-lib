@@ -76,18 +76,18 @@ func (api *API) parseServerMessage(buffer string) error {
 			}
 
 			// make the data more readable
-			var res map[string]interface{} = make(map[string]interface{})
-			res["symbol"] = info["n"]
+			var result map[string]interface{} = make(map[string]interface{})
+			result["symbol"] = info["n"]
 			if data, ok := info["v"].(map[string]interface{}); ok {
-				res["volume"] = data["volume"]
-				res["current_price"] = data["lp"]
-				res["price_change"] = data["ch"]
-				res["price_change_percentage"] = data["chp"]
-				res["timestamp"] = data["lp_time"]
+				result["volume"] = data["volume"]
+				result["current_price"] = data["lp"]
+				result["price_change"] = data["ch"]
+				result["price_change_percentage"] = data["chp"]
+				result["timestamp"] = data["lp_time"]
 			}
 
 			// send to the read thread for the user to use
-			api.Channels.Read <- res
+			api.Channels.Read <- result
 
 			// get historical data
 		} else if res["m"] == "timescale_update" {
@@ -114,7 +114,7 @@ func (api *API) parseServerMessage(buffer string) error {
 			}
 
 			// more readable structure to store data in
-			var res map[string]interface{} = make(map[string]interface{})
+			var result map[string]interface{} = make(map[string]interface{})
 			var timestamp, open, high, low, close, volume []interface{}
 
 			// for all the data provided
@@ -145,16 +145,16 @@ func (api *API) parseServerMessage(buffer string) error {
 			}
 
 			// move all the data into the usable data structure
-			res["symbol"] = api.series.mapsSymbols[seriesId]
-			res["timestamp"] = timestamp
-			res["open"] = open
-			res["high"] = high
-			res["low"] = low
-			res["close"] = close
-			res["volume"] = volume
+			result["symbol"] = api.series.mapsSymbols[seriesId]
+			result["timestamp"] = timestamp
+			result["open"] = open
+			result["high"] = high
+			result["low"] = low
+			result["close"] = close
+			result["volume"] = volume
 
 			// provide the data to the read channel for the user to receive
-			api.Channels.Read <- res
+			api.Channels.Read <- result
 
 			// unlock the mutex if the requested string has been returned by the server
 		} else if api.halted.on != "" && res["m"] == api.halted.on {
