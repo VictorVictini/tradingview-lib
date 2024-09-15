@@ -68,7 +68,7 @@ func (api *API) sendServer(name string, args []interface{}) error {
 	return nil
 }
 
-func (api *API) readMessage(buffer string) error {
+func (api *API) readServerMessage(buffer string) error {
 	msgs := strings.Split(buffer, "~m~")
 	for _, msg := range msgs {
 		var res map[string]interface{}
@@ -174,9 +174,9 @@ func (api *API) readMessage(buffer string) error {
 			api.halted.mutex.Unlock()
 			api.halted.on = ""
 		} else if res["m"] == "critical_error" {
-			return errors.New("readMessage: TradingView Critical Error: " + msg)
+			return errors.New("readServerMessage: TradingView Critical Error: " + msg)
 		} else if res["m"] == "protocol_error" {
-			return errors.New("readMessage: TradingView Protocol Error: " + msg)
+			return errors.New("readServerMessage: TradingView Protocol Error: " + msg)
 		}
 	}
 	return nil

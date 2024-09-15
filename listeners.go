@@ -14,7 +14,7 @@ func (api *API) activeReadListener() {
 			return // quit reading if error
 		}
 
-		err = api.readMessage(string(message))
+		err = api.readServerMessage(string(message))
 		if err != nil {
 			api.Channels.Error <- err
 			return
