@@ -22,6 +22,10 @@ func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType Sessi
 	return api.sendWriteThread("modify_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})
 }
 
+func (api *API) RequestMoreData(candleCount int) error {
+	return api.sendWriteThread("request_more_data", append([]interface{}{api.csToken}, HISTORY_TOKEN, candleCount))
+}
+
 func (api *API) resolveSymbol(symbol string, sessionType SessionType) error {
 	if _, exists := api.resolvedSymbols[symbol]; exists {
 		return nil

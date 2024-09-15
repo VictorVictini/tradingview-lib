@@ -22,10 +22,6 @@ func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 	return api.quoteFastSymbols()
 }
 
-func (api *API) RequestMoreData(candleCount int) error {
-	return api.sendWriteThread("request_more_data", append([]interface{}{api.csToken}, HISTORY_TOKEN, candleCount))
-}
-
 func (api *API) SwitchTimezone(timezone string) error {
 	return api.sendWriteThread("switch_timezone", append([]interface{}{api.csToken}, timezone))
 }
