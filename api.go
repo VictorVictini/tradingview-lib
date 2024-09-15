@@ -9,11 +9,18 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+/*
+Switches the timezone the data is viewed on for the current session
+*/
 func (api *API) SwitchTimezone(timezone string) error {
 	return api.sendWriteThread("switch_timezone", append([]interface{}{api.session.chart.key}, timezone))
 }
 
+/*
+Sends the data to the server in the format it requests
+*/
 func (api *API) sendServerMessage(name string, args []interface{}) error {
+	// change input into requested format
 	message, err := json.Marshal(
 		map[string]interface{}{
 			"m": name,
@@ -21,16 +28,13 @@ func (api *API) sendServerMessage(name string, args []interface{}) error {
 		},
 	)
 
+	// ensure the data was created without issues
 	if err != nil {
 		return err
 	}
 
-	err = api.ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(message))+SEPARATOR+string(message)))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// send the message to the server
+	return api.ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(message))+SEPARATOR+string(message)))
 }
 
 func (api *API) readServerMessage(buffer string) error {
