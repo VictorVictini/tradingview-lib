@@ -8,13 +8,15 @@ which is later parsed then passed to the read channel
 */
 func (api *API) activeReadListener() {
 	for {
+		// read the message from the server
 		_, message, err := api.ws.ReadMessage()
 		if err != nil {
 			api.Channels.Error <- err
 			return // quit reading if error
 		}
 
-		err = api.readServerMessage(string(message))
+		// parse the message
+		err = api.parseServerMessage(string(message))
 		if err != nil {
 			api.Channels.Error <- err
 			return
@@ -28,7 +30,10 @@ which is later sent to the server at the next available instance
 */
 func (api *API) activeWriteListener() {
 	for {
+		// retrieve data from the write channel
 		data, ok := <-api.Channels.write
+
+		// error if it is closed
 		if !ok {
 			err := errors.New("activeWriteListener: write channel is closed")
 			api.Channels.internalError <- err
@@ -41,6 +46,8 @@ func (api *API) activeWriteListener() {
 		if err != nil {
 			api.Channels.Error <- err
 		}
+
+		// always send so the function using internalError doesn't end up locked
 		api.Channels.internalError <- err
 
 		// lock the write thread until a given response is received (if necessary)

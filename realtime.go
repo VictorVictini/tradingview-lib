@@ -29,15 +29,18 @@ func (api *API) AddRealtimeSymbols(symbols []string) error {
 }
 
 func (api *API) RemoveRealtimeSymbols(symbols []string) error {
+	// request the server to remove the symbols
 	symbols_conv := convertInterfaceArr(symbols)
 	if err := api.sendWriteThread("quote_remove_symbols", append([]interface{}{api.session.quote.symbolQuotes}, symbols_conv...)); err != nil {
 		return err
 	}
 
+	// remove the symbols from our resolved symbols
 	for _, symbol := range symbols {
 		delete(api.symbols.resolvedIDs, symbol)
 	}
 
+	// request the server to update its realtime symbols
 	return api.updateRealtimeSymbols()
 }
 
@@ -45,10 +48,9 @@ func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 Updates what real time stocks/symbols are being provided by the server
 */
 func (api *API) updateRealtimeSymbols() error {
-	// retrieve keys then convert the slice to []interface{}
-	symbols := slices.Collect(maps.Keys(api.symbols.realtimeSet))
-	symbols_conv := convertInterfaceArr(symbols)
+	// retrieve symbols as an interface array []interface{}
+	symbols := convertInterfaceArr(slices.Collect(maps.Keys(api.symbols.realtimeSet)))
 
 	// send the request to the server
-	return api.sendWriteThread("quote_fast_symbols", append([]interface{}{api.session.quote.key}, symbols_conv...))
+	return api.sendWriteThread("quote_fast_symbols", append([]interface{}{api.session.quote.key}, symbols...))
 }

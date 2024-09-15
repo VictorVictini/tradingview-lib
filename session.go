@@ -77,8 +77,12 @@ func (api *API) OpenConnection() error {
 	return api.auth()
 }
 
+/*
+Sends our authority level to the server
+*/
 func (api *API) auth() error {
-	authMsgs := []request{
+	// a list of requests to send
+	requests := []request{
 		{"set_auth_token", []interface{}{"unauthorized_user_token"}},
 		{"chart_create_session", []interface{}{api.session.chart.key, ""}},
 		{"quote_create_session", []interface{}{api.session.quote.key}},
@@ -86,8 +90,9 @@ func (api *API) auth() error {
 		{"quote_set_fields", []interface{}{api.session.quote.symbolQuotes, "base-currency-logoid", "ch", "chp", "currency-logoid", "currency_code", "currency_id", "base_currency_id", "current_session", "description", "exchange", "format", "fractional", "is_tradable", "language", "local_description", "listed_exchange", "logoid", "lp", "lp_time", "minmov", "minmove2", "original_name", "pricescale", "pro_name", "short_name", "type", "typespecs", "update_mode", "volume", "variable_tick_size", "value_unit_id"}},
 	}
 
-	for _, token := range authMsgs {
-		if err := api.sendWriteThread(token.name, token.args); err != nil {
+	// sending all requests
+	for _, request := range requests {
+		if err := api.sendWriteThread(request.name, request.args); err != nil {
 			return err
 		}
 	}

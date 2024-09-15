@@ -5,12 +5,14 @@ import (
 	"math/rand"
 )
 
-func convertInterfaceArr(strArr []string) []interface{} {
-	inter := make([]interface{}, len(strArr))
-	for i := range strArr {
-		inter[i] = strArr[i]
+/*
+Converts a string array to an interface array
+*/
+func convertInterfaceArr(arr []string) []interface{} {
+	inter := make([]interface{}, len(arr))
+	for i := range arr {
+		inter[i] = arr[i]
 	}
-
 	return inter
 }
 
@@ -30,13 +32,14 @@ func (api *API) sendWriteThread(name string, args []interface{}) error {
 	return err
 }
 
+/*
+Creates a token (a randomised string of characters)
+*/
 func createToken() string {
 	token := make([]byte, TOKEN_LENGTH)
-
 	for i := range token {
 		randomIndex := rand.Intn(len(TOKEN_CHARS))
 		token[i] = TOKEN_CHARS[randomIndex]
 	}
-
 	return string(token)
 }

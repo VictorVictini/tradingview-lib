@@ -37,15 +37,22 @@ func (api *API) sendServerMessage(name string, args []interface{}) error {
 	return api.ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(message))+SEPARATOR+string(message)))
 }
 
-func (api *API) readServerMessage(buffer string) error {
+/*
+Parse the message from the server
+*/
+func (api *API) parseServerMessage(buffer string) error {
+	// separate each message by the separator
 	msgs := strings.Split(buffer, SEPARATOR)
+
+	// for each message
 	for _, msg := range msgs {
+		// parse the message through JSON
 		var res map[string]interface{}
 		err := json.Unmarshal([]byte(msg), &res)
 
-		// not a json string
+		// the message was not JSON
 		if err != nil {
-			// not json
+			// send the message back if it contains the identifier
 			if strings.Contains(msg, "~h~") {
 				if err = api.ws.WriteMessage(websocket.TextMessage, []byte(SEPARATOR+strconv.Itoa(len(msg))+SEPARATOR+msg)); err != nil {
 					return err
@@ -55,18 +62,20 @@ func (api *API) readServerMessage(buffer string) error {
 			continue
 		}
 
-		// is json
-		if res["m"] == "qsd" { // realtime price changes
+		// the message was valid JSON
+		// if the server provided realtime price changes
+		if res["m"] == "qsd" {
+			// ensure the data is in a valid format
 			resp, ok := res["p"].([]interface{})
 			if !ok {
 				continue
 			}
-
 			info, ok := resp[1].(map[string]interface{})
 			if !ok {
 				continue
 			}
 
+			// make the data more readable
 			var res map[string]interface{} = make(map[string]interface{})
 			res["symbol"] = info["n"]
 			if data, ok := info["v"].(map[string]interface{}); ok {
@@ -77,52 +86,57 @@ func (api *API) readServerMessage(buffer string) error {
 				res["timestamp"] = data["lp_time"]
 			}
 
+			// send to the read thread for the user to use
 			api.Channels.Read <- res
-		} else if res["m"] == "timescale_update" { // get historical data
+
+			// get historical data
+		} else if res["m"] == "timescale_update" {
+			// ensure the data is in a valid format
 			resp, ok := res["p"].([]interface{})
 			if !ok {
 				continue
 			}
-
 			info, ok := resp[1].(map[string]interface{})
 			if !ok {
 				continue
 			}
-
 			seriesInfo, ok := info[HISTORY_TOKEN].(map[string]interface{})
 			if !ok {
 				continue
 			}
-
 			allData, ok := seriesInfo["s"].([]interface{})
 			if !ok {
 				continue
 			}
-
 			seriesId, ok := seriesInfo["t"].(string)
 			if !ok {
 				continue
 			}
 
+			// more readable structure to store data in
 			var res map[string]interface{} = make(map[string]interface{})
-			res["symbol"] = api.series.mapsSymbols[seriesId]
 			var timestamp, open, high, low, close, volume []interface{}
+
+			// for all the data provided
 			for _, dataElement := range allData {
+				// ensure it is in a valid format
 				dataElement, ok := dataElement.(map[string]interface{})
 				if !ok {
 					continue
 				}
-
 				data, ok := dataElement["v"].([]interface{})
 				if !ok {
 					continue
 				}
 
+				// add to the parallel arrays
 				timestamp = append(timestamp, data[0])
 				open = append(open, data[1])
 				high = append(high, data[2])
 				low = append(low, data[3])
 				close = append(close, data[4])
+
+				// add the volume as nil if we can't add it
 				if len(data) >= 6 {
 					volume = append(volume, data[5])
 				} else {
@@ -130,6 +144,8 @@ func (api *API) readServerMessage(buffer string) error {
 				}
 			}
 
+			// move all the data into the usable data structure
+			res["symbol"] = api.series.mapsSymbols[seriesId]
 			res["timestamp"] = timestamp
 			res["open"] = open
 			res["high"] = high
@@ -137,14 +153,19 @@ func (api *API) readServerMessage(buffer string) error {
 			res["close"] = close
 			res["volume"] = volume
 
+			// provide the data to the read channel for the user to receive
 			api.Channels.Read <- res
+
+			// unlock the mutex if the requested string has been returned by the server
 		} else if api.halted.on != "" && res["m"] == api.halted.on {
 			api.halted.mutex.Unlock()
-			api.halted.on = ""
+			api.halted.on = "" // resetting the mutex
+
+			// return an error if the server had returned either error
 		} else if res["m"] == "critical_error" {
-			return errors.New("readServerMessage: TradingView Critical Error: " + msg)
+			return errors.New("parseServerMessage: TradingView Critical Error: " + msg)
 		} else if res["m"] == "protocol_error" {
-			return errors.New("readServerMessage: TradingView Protocol Error: " + msg)
+			return errors.New("parseServerMessage: TradingView Protocol Error: " + msg)
 		}
 	}
 	return nil
