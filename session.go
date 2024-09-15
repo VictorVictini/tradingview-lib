@@ -1,9 +1,7 @@
 package tradingview
 
 import (
-	"maps"
 	"net/http"
-	"slices"
 
 	"github.com/gorilla/websocket"
 )
@@ -79,37 +77,20 @@ func (api *API) OpenConnection() error {
 	return api.auth()
 }
 
-/*
-Retrieves real-time data for the given stocks/symbols
-which is then provided to the read channel
-*/
-func (api *API) AddRealtimeSymbols(symbols []string) error {
-	// converts symbols from []string to []interface{}
-	symbols_conv := convertInterfaceArr(symbols)
-
-	// sending data we want to the server
-	err := api.sendWriteThread("quote_add_symbols", append([]interface{}{api.session.quote.symbolQuotes}, symbols_conv...))
-	if err != nil {
-		return err
+func (api *API) auth() error {
+	authMsgs := []request{
+		{"set_auth_token", []interface{}{"unauthorized_user_token"}},
+		{"chart_create_session", []interface{}{api.session.chart.key, ""}},
+		{"quote_create_session", []interface{}{api.session.quote.key}},
+		{"quote_create_session", []interface{}{api.session.quote.symbolQuotes}},
+		{"quote_set_fields", []interface{}{api.session.quote.symbolQuotes, "base-currency-logoid", "ch", "chp", "currency-logoid", "currency_code", "currency_id", "base_currency_id", "current_session", "description", "exchange", "format", "fractional", "is_tradable", "language", "local_description", "listed_exchange", "logoid", "lp", "lp_time", "minmov", "minmove2", "original_name", "pricescale", "pro_name", "short_name", "type", "typespecs", "update_mode", "volume", "variable_tick_size", "value_unit_id"}},
 	}
 
-	// add the symbols to the set of handled symbols
-	for _, symbol := range symbols {
-		api.symbols.realtimeSet[symbol] = true
+	for _, token := range authMsgs {
+		if err := api.sendWriteThread(token.name, token.args); err != nil {
+			return err
+		}
 	}
 
-	// tells server to start sending the symbols' real time data
-	return api.updateRealtimeSymbols()
-}
-
-/*
-Updates what real time stocks/symbols are being provided by the server
-*/
-func (api *API) updateRealtimeSymbols() error {
-	// retrieve keys then convert the slice to []interface{}
-	symbols := slices.Collect(maps.Keys(api.symbols.realtimeSet))
-	symbols_conv := convertInterfaceArr(symbols)
-
-	// send the request to the server
-	return api.sendWriteThread("quote_fast_symbols", append([]interface{}{api.session.quote.key}, symbols_conv...))
+	return nil
 }
