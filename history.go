@@ -8,15 +8,15 @@ func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType Sessi
 		return err
 	}
 
-	api.seriesCounter++
-	series := "s" + strconv.FormatUint(api.seriesCounter, 10)
+	api.series.counter++
+	series := "s" + strconv.FormatUint(api.series.counter, 10)
 	id := api.resolvedSymbols[symbol]
 
-	api.seriesMap[series] = symbol
+	api.series.mapsSymbols[series] = symbol
 
 	// possibly use sync.Once?
-	if !api.seriesCreated {
-		api.seriesCreated = true
+	if !api.series.wasCreated {
+		api.series.wasCreated = true
 		return api.sendWriteThread("create_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
 	}
 	return api.sendWriteThread("modify_series", []interface{}{api.csToken, HISTORY_TOKEN, series, id, string(timeframe), ""})

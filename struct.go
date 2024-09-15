@@ -16,11 +16,10 @@ type API struct {
 	ws       *websocket.Conn
 	Channels Channels
 
+	series series
+
 	symbolCounter   uint64
-	seriesCounter   uint64
-	seriesCreated   bool // use sync.Once in clean up
 	resolvedSymbols map[string]string
-	seriesMap       map[string]string
 
 	csToken string
 	qsToken string
@@ -41,6 +40,15 @@ type Channels struct {
 	write         chan map[string]interface{}
 	Error         chan error // receives errors that occurred in read/write threads
 	internalError chan error // internal handling of errors in read/write threads
+}
+
+/*
+Handles data related to series
+*/
+type series struct {
+	counter     uint64
+	wasCreated  bool
+	mapsSymbols map[string]string // maps a series to a correlating symbol
 }
 
 /*
@@ -78,10 +86,13 @@ func (api *API) OpenConnection() error {
 	}
 
 	api.symbolCounter = 0
-	api.seriesCounter = 0
-	api.seriesCreated = false // use sync.Once in clean up
 	api.resolvedSymbols = make(map[string]string)
-	api.seriesMap = make(map[string]string)
+
+	api.series = series{
+		counter:     0,
+		wasCreated:  false,
+		mapsSymbols: make(map[string]string),
+	}
 
 	api.csToken = "cs_" + createToken()
 	api.qsToken = createToken()

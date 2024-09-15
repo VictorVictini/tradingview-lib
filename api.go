@@ -144,7 +144,7 @@ func (api *API) readMessage(buffer string) error {
 			}
 
 			var res map[string]interface{} = make(map[string]interface{})
-			res["symbol"] = api.seriesMap[seriesId]
+			res["symbol"] = api.series.mapsSymbols[seriesId]
 			var timestamp, open, high, low, close, volume []interface{}
 			for _, dataElement := range allData {
 				dataElement, ok := dataElement.(map[string]interface{})
