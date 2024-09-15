@@ -23,13 +23,13 @@ func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 }
 
 func (api *API) SwitchTimezone(timezone string) error {
-	return api.sendWriteThread("switch_timezone", append([]interface{}{api.session.chart.token}, timezone))
+	return api.sendWriteThread("switch_timezone", append([]interface{}{api.session.chart.key}, timezone))
 }
 
 func (api *API) auth() error {
 	authMsgs := []request{
 		{"set_auth_token", []interface{}{"unauthorized_user_token"}},
-		{"chart_create_session", []interface{}{api.session.chart.token, ""}},
+		{"chart_create_session", []interface{}{api.session.chart.key, ""}},
 		{"quote_create_session", []interface{}{api.session.quote.key}},
 		{"quote_create_session", []interface{}{api.session.quote.symbolQuotes}},
 		{"quote_set_fields", []interface{}{api.session.quote.symbolQuotes, "base-currency-logoid", "ch", "chp", "currency-logoid", "currency_code", "currency_id", "base_currency_id", "current_session", "description", "exchange", "format", "fractional", "is_tradable", "language", "local_description", "listed_exchange", "logoid", "lp", "lp_time", "minmov", "minmove2", "original_name", "pricescale", "pro_name", "short_name", "type", "typespecs", "update_mode", "volume", "variable_tick_size", "value_unit_id"}},

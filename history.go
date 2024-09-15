@@ -17,13 +17,13 @@ func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType Sessi
 	// possibly use sync.Once?
 	if !api.series.wasCreated {
 		api.series.wasCreated = true
-		return api.sendWriteThread("create_series", []interface{}{api.session.chart.token, HISTORY_TOKEN, series, id, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
+		return api.sendWriteThread("create_series", []interface{}{api.session.chart.key, HISTORY_TOKEN, series, id, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
 	}
-	return api.sendWriteThread("modify_series", []interface{}{api.session.chart.token, HISTORY_TOKEN, series, id, string(timeframe), ""})
+	return api.sendWriteThread("modify_series", []interface{}{api.session.chart.key, HISTORY_TOKEN, series, id, string(timeframe), ""})
 }
 
 func (api *API) RequestMoreData(candleCount int) error {
-	return api.sendWriteThread("request_more_data", append([]interface{}{api.session.chart.token}, HISTORY_TOKEN, candleCount))
+	return api.sendWriteThread("request_more_data", append([]interface{}{api.session.chart.key}, HISTORY_TOKEN, candleCount))
 }
 
 func (api *API) resolveSymbol(symbol string, sessionType SessionType) error {
@@ -34,7 +34,7 @@ func (api *API) resolveSymbol(symbol string, sessionType SessionType) error {
 	api.symbols.counter++
 	id := "symbol_" + strconv.FormatUint(api.symbols.counter, 10) //symbol id
 
-	err := api.sendWriteThread("resolve_symbol", []interface{}{api.session.chart.token, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
+	err := api.sendWriteThread("resolve_symbol", []interface{}{api.session.chart.key, id, "={\"symbol\":\"" + symbol + "\",\"adjustment\":\"splits\",\"session\":\"" + string(sessionType) + "\"}"})
 	if err != nil {
 		return err
 	}

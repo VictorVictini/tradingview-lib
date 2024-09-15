@@ -60,7 +60,7 @@ type session struct {
 Handles chart session data
 */
 type chart struct {
-	token string
+	key string
 }
 
 /*

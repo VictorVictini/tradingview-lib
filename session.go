@@ -47,7 +47,7 @@ func (api *API) OpenConnection() error {
 
 	api.session = session{
 		chart: chart{
-			token: "cs_" + createToken(),
+			key: "cs_" + createToken(),
 		},
 		quote: quote{
 			token:        createToken(),
