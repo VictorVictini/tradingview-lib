@@ -20,10 +20,7 @@ and retrieves an error if one occurred (otherwise nil)
 */
 func (api *API) sendWriteThread(name string, args []interface{}) error {
 	// send data to the write channel
-	api.Channels.write <- map[string]interface{}{
-		"name": name,
-		"args": args,
-	}
+	api.Channels.write <- request{name, args}
 
 	// retrieve any error that has occurred
 	err, ok := <-api.Channels.internalError

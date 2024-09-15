@@ -27,10 +27,7 @@ func (api *API) SwitchTimezone(timezone string) error {
 }
 
 func (api *API) auth() error {
-	authMsgs := []struct {
-		name string
-		args []interface{}
-	}{
+	authMsgs := []request{
 		{"set_auth_token", []interface{}{"unauthorized_user_token"}},
 		{"chart_create_session", []interface{}{api.csToken, ""}},
 		{"quote_create_session", []interface{}{api.qs}},

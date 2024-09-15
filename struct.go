@@ -37,7 +37,7 @@ as well as the channels the user will be able to utilise
 */
 type Channels struct {
 	Read          chan map[string]interface{}
-	write         chan map[string]interface{}
+	write         chan request
 	Error         chan error // receives errors that occurred in read/write threads
 	internalError chan error // internal handling of errors in read/write threads
 }
@@ -61,6 +61,14 @@ type halted struct {
 }
 
 /*
+Handles the structure of which data sent to the server is formatted
+*/
+type request struct {
+	name string
+	args []interface{}
+}
+
+/*
 Creates an active websocket connection
 */
 func (api *API) OpenConnection() error {
@@ -80,7 +88,7 @@ func (api *API) OpenConnection() error {
 	// manages channels for the user to access as well as internal channels
 	api.Channels = Channels{
 		Read:          make(chan map[string]interface{}),
-		write:         make(chan map[string]interface{}),
+		write:         make(chan request),
 		Error:         make(chan error),
 		internalError: make(chan error),
 	}
