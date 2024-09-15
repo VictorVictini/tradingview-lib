@@ -13,18 +13,13 @@ import (
 Handles data associated with an instance of the websocket
 */
 type API struct {
-	ws       *websocket.Conn
 	Channels Channels
 
+	ws      *websocket.Conn
 	series  series
 	symbols symbols
-
-	csToken string
-	qsToken string
-	qs      string
-	qssq    string
-
-	halted halted
+	session session
+	halted  halted
 }
 
 /*
@@ -54,6 +49,30 @@ type symbols struct {
 	counter     uint64
 	resolvedIDs map[string]string // correlating IDs for the given symbols
 	realtimeSet map[string]bool   // set of all currently active realtime symbols
+}
+
+/*
+Handles session data
+*/
+type session struct {
+	chart chart
+	quote quote
+}
+
+/*
+Handles chart session data
+*/
+type chart struct {
+	token string
+}
+
+/*
+Handles quote session data
+*/
+type quote struct {
+	token        string
+	key          string
+	symbolQuotes string
 }
 
 /*
@@ -110,10 +129,16 @@ func (api *API) OpenConnection() error {
 		realtimeSet: make(map[string]bool),
 	}
 
-	api.csToken = "cs_" + createToken()
-	api.qsToken = createToken()
-	api.qs = "qs_" + api.qsToken
-	api.qssq = "qs_snapshoter_basic-symbol-quotes_" + api.qsToken
+	api.session = session{
+		chart: chart{
+			token: "cs_" + createToken(),
+		},
+		quote: quote{
+			token:        createToken(),
+			key:          "qs_" + api.session.quote.token,
+			symbolQuotes: "qs_snapshoter_basic-symbol-quotes_" + api.session.quote.token,
+		},
+	}
 
 	// required responses for a given request being sent
 	// halts write requests from being sent until it is received
@@ -147,7 +172,7 @@ func (api *API) AddRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertInterfaceArr(symbols)
 
 	// sending data we want to the server
-	err := api.sendWriteThread("quote_add_symbols", append([]interface{}{api.qssq}, symbols_conv...))
+	err := api.sendWriteThread("quote_add_symbols", append([]interface{}{api.session.quote.symbolQuotes}, symbols_conv...))
 	if err != nil {
 		return err
 	}
@@ -170,5 +195,5 @@ func (api *API) quoteFastSymbols() error {
 	symbols_conv := convertInterfaceArr(symbols)
 
 	// send the request to the server
-	return api.sendWriteThread("quote_fast_symbols", append([]interface{}{api.qs}, symbols_conv...))
+	return api.sendWriteThread("quote_fast_symbols", append([]interface{}{api.session.quote.key}, symbols_conv...))
 }

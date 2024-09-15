@@ -11,7 +11,7 @@ import (
 
 func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 	symbols_conv := convertInterfaceArr(symbols)
-	if err := api.sendWriteThread("quote_remove_symbols", append([]interface{}{api.qssq}, symbols_conv...)); err != nil {
+	if err := api.sendWriteThread("quote_remove_symbols", append([]interface{}{api.session.quote.symbolQuotes}, symbols_conv...)); err != nil {
 		return err
 	}
 
@@ -23,16 +23,16 @@ func (api *API) RemoveRealtimeSymbols(symbols []string) error {
 }
 
 func (api *API) SwitchTimezone(timezone string) error {
-	return api.sendWriteThread("switch_timezone", append([]interface{}{api.csToken}, timezone))
+	return api.sendWriteThread("switch_timezone", append([]interface{}{api.session.chart.token}, timezone))
 }
 
 func (api *API) auth() error {
 	authMsgs := []request{
 		{"set_auth_token", []interface{}{"unauthorized_user_token"}},
-		{"chart_create_session", []interface{}{api.csToken, ""}},
-		{"quote_create_session", []interface{}{api.qs}},
-		{"quote_create_session", []interface{}{api.qssq}},
-		{"quote_set_fields", []interface{}{api.qssq, "base-currency-logoid", "ch", "chp", "currency-logoid", "currency_code", "currency_id", "base_currency_id", "current_session", "description", "exchange", "format", "fractional", "is_tradable", "language", "local_description", "listed_exchange", "logoid", "lp", "lp_time", "minmov", "minmove2", "original_name", "pricescale", "pro_name", "short_name", "type", "typespecs", "update_mode", "volume", "variable_tick_size", "value_unit_id"}},
+		{"chart_create_session", []interface{}{api.session.chart.token, ""}},
+		{"quote_create_session", []interface{}{api.session.quote.key}},
+		{"quote_create_session", []interface{}{api.session.quote.symbolQuotes}},
+		{"quote_set_fields", []interface{}{api.session.quote.symbolQuotes, "base-currency-logoid", "ch", "chp", "currency-logoid", "currency_code", "currency_id", "base_currency_id", "current_session", "description", "exchange", "format", "fractional", "is_tradable", "language", "local_description", "listed_exchange", "logoid", "lp", "lp_time", "minmov", "minmove2", "original_name", "pricescale", "pro_name", "short_name", "type", "typespecs", "update_mode", "volume", "variable_tick_size", "value_unit_id"}},
 	}
 
 	for _, token := range authMsgs {
