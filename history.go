@@ -1,12 +1,18 @@
 package tradingview
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 /*
 Retrieves 10 candles from history for the provided symbol/stock
 Provides candles for the requested timeframe
+
+sessionType is only used once per symbol.
+startFrom is used only when GetHistory is first invoked, never after. (pass time.Time{} for current time)
 */
-func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType SessionType) error {
+func (api *API) GetHistory(symbol string, timeframe Timeframe, startFrom time.Time, sessionType SessionType) error {
 	// resolve the symbol
 	err := api.resolveSymbol(symbol, sessionType)
 	if err != nil {
@@ -24,7 +30,13 @@ func (api *API) GetHistory(symbol string, timeframe Timeframe, sessionType Sessi
 	// for the first instance of GetHistory(), create the initial series
 	if !api.series.wasCreated {
 		api.series.wasCreated = true // to avoid repeating this if statement
-		return api.sendWriteThread("create_series", []interface{}{api.session.chart.key, HISTORY_TOKEN, seriesID, symbolID, string(timeframe), INITIAL_HISTORY_CANDLES, ""})
+
+		var timeRange interface{} = INITIAL_HISTORY_CANDLES // by default it doesn't use the startFrom param
+		if !startFrom.IsZero() {                            // if startFrom is not Zero then use it
+			timeRange = []interface{}{"bar_count", startFrom.Unix(), INITIAL_HISTORY_CANDLES}
+		}
+
+		return api.sendWriteThread("create_series", []interface{}{api.session.chart.key, HISTORY_TOKEN, seriesID, symbolID, string(timeframe), timeRange})
 	}
 
 	// not the first instance, so modify the series instead
