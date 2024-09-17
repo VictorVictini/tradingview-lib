@@ -70,7 +70,9 @@ func (api *API) parseServerMessage(buffer string) error {
 
 			// otherwise handle the response
 		} else {
-			return api.handler(res, msg)
+			if err = api.handler(res, msg); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
