@@ -1,6 +1,7 @@
 package tradingview
 
 import (
+	"errors"
 	"strconv"
 	"time"
 )
@@ -13,6 +14,11 @@ sessionType is only used once per symbol.
 startFrom is used only when GetHistory is first invoked, never after. (pass time.Time{} for current time)
 */
 func (api *API) GetHistory(symbol string, timeframe Timeframe, startFrom time.Time, sessionType SessionType) error {
+	// return error if startFrom is invalid
+	if startFrom.After(time.Now()) {
+		return errors.New("GetHistory: the time for startFrom must be earlier than the current time, startFrom < time.Now")
+	}
+
 	// resolve the symbol
 	err := api.resolveSymbol(symbol, sessionType)
 	if err != nil {
