@@ -43,5 +43,5 @@ const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
 const SEPARATOR = "~m~"
 const HISTORY_TOKEN = "sds_1"
 
-// history initial candles amount
-const INITIAL_HISTORY_CANDLES = 10
+// default history initial candles amount if not specified
+const DEFAULT_INITIAL_HISTORY_CANDLES = 10

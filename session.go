@@ -7,12 +7,22 @@ import (
 )
 
 /*
-Creates an active websocket connection
+Creates an active websocket connection (settings param can be nil if you want to use default settings)
 */
-func (api *API) OpenConnection() error {
+func (api *API) OpenConnection(settings map[string]interface{}) error {
 	// setting up the header
 	header := http.Header{}
 	header.Add("Origin", TV_ORIGIN_URL)
+
+	// to use our own settings if user doesnt specify custom ones
+	if settings == nil {
+		settings = make(map[string]interface{})
+	}
+
+	// apply custom settings, if there are any
+	if _, ok := settings["INITIAL_HISTORY_CANDLES"]; !ok {
+		settings["INITIAL_HISTORY_CANDLES"] = DEFAULT_INITIAL_HISTORY_CANDLES
+	}
 
 	// creating the websocket
 	ws, _, err := websocket.DefaultDialer.Dial(TV_URL, header)
@@ -32,9 +42,10 @@ func (api *API) OpenConnection() error {
 	}
 
 	api.series = series{
-		counter:     0,
-		wasCreated:  false,
-		mapsSymbols: make(map[string]string),
+		counter:               0,
+		wasCreated:            false,
+		initialHistoryCandles: settings["INITIAL_HISTORY_CANDLES"].(int),
+		mapsSymbols:           make(map[string]string),
 	}
 
 	api.symbols = symbols{
