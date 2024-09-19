@@ -34,9 +34,10 @@ type Channels struct {
 Handles data related to series
 */
 type series struct {
-	counter     uint64
-	wasCreated  bool
-	mapsSymbols map[string]string // maps a series to a correlating symbol
+	counter               uint64
+	wasCreated            bool
+	initialHistoryCandles int               // how many candles to load at the start of GetHistory?
+	mapsSymbols           map[string]string // maps a series to a correlating symbol
 }
 
 /*

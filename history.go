@@ -37,9 +37,9 @@ func (api *API) GetHistory(symbol string, timeframe Timeframe, startFrom time.Ti
 	if !api.series.wasCreated {
 		api.series.wasCreated = true // to avoid repeating this if statement
 
-		var timeRange interface{} = INITIAL_HISTORY_CANDLES // by default it doesn't use the startFrom param
-		if !startFrom.IsZero() {                            // if startFrom is not Zero then use it
-			timeRange = []interface{}{"bar_count", startFrom.Unix(), INITIAL_HISTORY_CANDLES}
+		var timeRange interface{} = api.series.initialHistoryCandles // by default it doesn't use the startFrom param
+		if !startFrom.IsZero() {                                     // if startFrom is not Zero then use it
+			timeRange = []interface{}{"bar_count", startFrom.Unix(), api.series.initialHistoryCandles}
 		}
 
 		return api.sendWriteThread("create_series", []interface{}{api.session.chart.key, HISTORY_TOKEN, seriesID, symbolID, string(timeframe), timeRange})

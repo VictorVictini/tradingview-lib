@@ -94,6 +94,7 @@ func (api *API) handler(data map[string]interface{}, msg string) error {
 
 		// make the data more readable
 		var result map[string]interface{} = make(map[string]interface{})
+		result["type"] = "realtime"
 		result["symbol"] = info["n"]
 		if data, ok := info["v"].(map[string]interface{}); ok {
 			result["volume"] = data["volume"]
@@ -162,6 +163,7 @@ func (api *API) handler(data map[string]interface{}, msg string) error {
 		}
 
 		// move all the data into the usable data structure
+		result["type"] = "history"
 		result["symbol"] = api.series.mapsSymbols[seriesId]
 		result["timestamp"] = timestamp
 		result["open"] = open
