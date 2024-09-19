@@ -70,7 +70,9 @@ func (api *API) parseServerMessage(buffer string) error {
 
 			// otherwise handle the response
 		} else {
-			api.handler(res, msg)
+			if err = api.handler(res, msg); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -176,6 +178,8 @@ func (api *API) handler(data map[string]interface{}, msg string) error {
 		return errors.New("parseServerMessage: TradingView Critical Error: " + msg)
 	case "protocol_error":
 		return errors.New("parseServerMessage: TradingView Protocol Error: " + msg)
+	case "symbol_error":
+		return errors.New("parseServerMessage: TradingView Symbol Error: " + msg)
 	}
 	return nil
 }
