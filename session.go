@@ -1,6 +1,7 @@
 package tradingview
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -22,6 +23,15 @@ func (api *API) OpenConnection(settings map[string]interface{}) error {
 	// apply custom settings, if there are any
 	if _, ok := settings["INITIAL_HISTORY_CANDLES"]; !ok {
 		settings["INITIAL_HISTORY_CANDLES"] = DEFAULT_INITIAL_HISTORY_CANDLES
+	} else {
+		val, isInt := settings["INITIAL_HISTORY_CANDLES"].(int)
+		if !isInt {
+			return errors.New("INITIAL_HISTORY_CANDLES must be an int")
+		}
+
+		if val < 1 {
+			return errors.New("INITIAL_HISTORY_CANDLES must be bigger than 0")
+		}
 	}
 
 	// creating the websocket
