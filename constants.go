@@ -1,9 +1,10 @@
 package tradingview
 
-// session data
 type SessionType string
 type Timeframe string
+type SearchType string
 
+// session data
 const (
 	Regular  SessionType = "regular"
 	Extended SessionType = "extended"
@@ -31,6 +32,18 @@ const (
 	TwelveMonths Timeframe = "12M"
 )
 
+// search data
+const (
+	All     SearchType = "undefined"
+	Stocks  SearchType = "stocks"
+	Forex   SearchType = "forex"
+	Crypto  SearchType = "crypto"
+	Indices SearchType = "index"
+	Bonds   SearchType = "bond"
+	Economy SearchType = "economic"
+	Options SearchType = "options"
+)
+
 // URL data for initialisation
 const TV_URL = "wss://data.tradingview.com/socket.io/websocket"
 const TV_ORIGIN_URL = "https://www.tradingview.com"
@@ -42,6 +55,7 @@ const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
 // random constants
 const SEPARATOR = "~m~"
 const HISTORY_TOKEN = "sds_1"
+const SEARCH_PAGE_SIZE = 50
 
 // default history initial candles amount if not specified
 const DEFAULT_INITIAL_HISTORY_CANDLES = 10

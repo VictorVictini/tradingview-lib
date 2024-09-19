@@ -31,6 +31,21 @@ type Channels struct {
 }
 
 /*
+Handles data related to searching symbols
+*/
+type Search struct {
+	results  []interface{}
+	currPage int
+	maxPages int
+
+	currTerm       string
+	currSearchType SearchType
+	hasSearched    bool
+
+	mutex sync.Mutex
+}
+
+/*
 Handles data related to series
 */
 type series struct {
