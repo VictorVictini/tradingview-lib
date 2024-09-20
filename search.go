@@ -3,6 +3,7 @@ package tradingview
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -27,8 +28,6 @@ func (search *Search) SearchSymbols(term string, searchType SearchType) ([]inter
 	if !regexp.MustCompile(`^[A-Z0-9 :]*$`).MatchString(term) {
 		return nil, errors.New("search term must be either empty or only have characters ['A-Z', '0-9', ' ', ':']")
 	}
-	// escape the term so that it can be used inside the GET url (e.g. ":" -> %3A, " " -> +)
-	term = url.QueryEscape(term)
 
 	// reset search bool if searching again
 	if search.hasSearched {
@@ -207,8 +206,24 @@ func sendRawSearchRequest(term string, searchType SearchType, page int) (*http.R
 	var req *http.Request
 	var err error
 
+	// separate exchange and rest of symbol
+	separate := strings.SplitN(term, ":", 2)
+	exchange := ""
+
+	if len(separate) == 2 {
+		// exchange is the first part before the colon
+		exchange = separate[0]
+
+		// escape the rest of the term so that it can be used inside the GET url (e.g. ":" -> %3A, " " -> +)
+		term = url.QueryEscape(separate[1])
+	} else {
+		// escape the entire term if there is no exchange specified
+		term = url.QueryEscape(term)
+	}
+
 	// create the base url using search term and type
-	baseUrl := "https://symbol-search.tradingview.com/symbol_search/v3/?text=" + term + "&search_type=" + string(searchType)
+	baseUrl := "https://symbol-search.tradingview.com/symbol_search/v3/?text=" + term + "&exchange=" + exchange + "&search_type=" + string(searchType)
+	fmt.Println(baseUrl)
 
 	// decrement since page numbers are 0-indexed
 	page--
