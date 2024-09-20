@@ -16,7 +16,7 @@ import (
 Searches for symbols using a search term and type.
 If the search term is blank then it will get everything.
 */
-func (search *Search) SearchSymbols(term string, searchType SearchType) error {
+func (search *Search) SearchSymbols(term string, searchType SearchType) ([]interface{}, error) {
 	search.mutex.Lock()
 	defer search.mutex.Unlock()
 
@@ -25,7 +25,7 @@ func (search *Search) SearchSymbols(term string, searchType SearchType) error {
 
 	// check if it is a valid search term
 	if !regexp.MustCompile(`^[A-Z0-9 :]*$`).MatchString(term) {
-		return errors.New("search term must be either empty or only have characters ['A-Z', '0-9', ' ', ':']")
+		return nil, errors.New("search term must be either empty or only have characters ['A-Z', '0-9', ' ', ':']")
 	}
 	// escape the term so that it can be used inside the GET url (e.g. ":" -> %3A, " " -> +)
 	term = url.QueryEscape(term)
@@ -38,7 +38,7 @@ func (search *Search) SearchSymbols(term string, searchType SearchType) error {
 	// send the search request (for the first page)
 	resp, err := sendRawSearchRequest(term, searchType, 1)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// close after this function is finished with the response
 	defer resp.Body.Close()
@@ -46,13 +46,19 @@ func (search *Search) SearchSymbols(term string, searchType SearchType) error {
 	// parse it from JSON
 	res, err := parseResponse(resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get how many remaining symbols are left (symbols amount/50 + 1 = page count)
 	remaining, ok := res["symbols_remaining"].(float64)
 	if !ok {
-		return errors.New("unexpected response format: symbols_remaining field missing or incorrect type")
+		return nil, errors.New("unexpected response format: symbols_remaining field missing or incorrect type")
+	}
+
+	// set the search results
+	symbols, ok := res["symbols"].([]interface{})
+	if !ok {
+		return nil, errors.New("unexpected response format: symbols field missing or incorrect type")
 	}
 
 	// initialise properties
@@ -63,50 +69,31 @@ func (search *Search) SearchSymbols(term string, searchType SearchType) error {
 	search.currSearchType = searchType
 	search.hasSearched = true
 
-	// set the search results
-	symbols, ok := res["symbols"].([]interface{})
-	if !ok {
-		return errors.New("unexpected response format: symbols field missing or incorrect type")
-	}
-	search.results = symbols
-	return nil
-}
-
-/*
-Get the results of the last *successful* search.
-Returns empty if no search has been done yet.
-*/
-func (search *Search) GetResults() []interface{} {
-	search.mutex.Lock()
-	defer search.mutex.Unlock()
-
-	return search.results
+	return symbols, nil
 }
 
 /*
 Move onto the next page of the search.
-Use GetResults() to get the results if successful.
-
 You must call Search() first.
 */
-func (search *Search) NextPage() error {
+func (search *Search) NextPage() ([]interface{}, error) {
 	search.mutex.Lock()
 	defer search.mutex.Unlock()
 
 	// user hasn't searched for anything yet, return error
 	if !search.hasSearched {
-		return errors.New("you must first call Search()")
+		return nil, errors.New("you must first call Search()")
 	}
 
 	// stop, we're at the max page limit
 	if search.currPage == search.maxPages {
-		return errors.New("reached max pages")
+		return nil, errors.New("reached max pages")
 	}
 
 	// send a search request for the next page
 	resp, err := sendRawSearchRequest(search.currTerm, search.currSearchType, search.currPage+1)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// close after this function is finished with the response
 	defer resp.Body.Close()
@@ -114,45 +101,42 @@ func (search *Search) NextPage() error {
 	// parse it from JSON
 	res, err := parseResponse(resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set the search results
 	symbols, ok := res["symbols"].([]interface{})
 	if !ok {
-		return errors.New("unexpected response format: symbols field missing or incorrect type")
+		return nil, errors.New("unexpected response format: symbols field missing or incorrect type")
 	}
-	search.results = symbols
 
 	// increment the page number now
 	search.currPage++
-	return nil
+	return symbols, nil
 }
 
 /*
 Move onto the previous page of the search.
-Use GetResults() to get the results if successful.
-
 You must call Search() first.
 */
-func (search *Search) PrevPage() error {
+func (search *Search) PrevPage() ([]interface{}, error) {
 	search.mutex.Lock()
 	defer search.mutex.Unlock()
 
 	// user hasn't searched for anything yet, return error
 	if !search.hasSearched {
-		return errors.New("you must first call Search()")
+		return nil, errors.New("you must first call Search()")
 	}
 
 	// stop, we're at the min page limit
 	if search.currPage == 1 {
-		return errors.New("cannot go back any more pages")
+		return nil, errors.New("cannot go back any more pages")
 	}
 
 	// send a search request for the previous page
 	resp, err := sendRawSearchRequest(search.currTerm, search.currSearchType, search.currPage-1)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// close after this function is finished with the response
 	defer resp.Body.Close()
@@ -160,19 +144,18 @@ func (search *Search) PrevPage() error {
 	// parse it from JSON
 	res, err := parseResponse(resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// set the search results
 	symbols, ok := res["symbols"].([]interface{})
 	if !ok {
-		return errors.New("unexpected response format: symbols field missing or incorrect type")
+		return nil, errors.New("unexpected response format: symbols field missing or incorrect type")
 	}
-	search.results = symbols
 
 	// decrement the page number now
 	search.currPage--
-	return nil
+	return symbols, nil
 }
 
 /*

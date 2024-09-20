@@ -34,7 +34,6 @@ type Channels struct {
 Handles data related to searching symbols
 */
 type Search struct {
-	results  []interface{}
 	currPage int
 	maxPages int
 
