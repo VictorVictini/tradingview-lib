@@ -3,7 +3,6 @@ package tradingview
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -223,7 +222,6 @@ func sendRawSearchRequest(term string, searchType SearchType, page int) (*http.R
 
 	// create the base url using search term and type
 	baseUrl := "https://symbol-search.tradingview.com/symbol_search/v3/?text=" + term + "&exchange=" + exchange + "&search_type=" + string(searchType)
-	fmt.Println(baseUrl)
 
 	// decrement since page numbers are 0-indexed
 	page--
