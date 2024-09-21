@@ -7,7 +7,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -22,11 +21,6 @@ func (search *Search) SearchSymbols(term string, searchType SearchType) ([]inter
 
 	// make the string have no starting/leading spaces + have it uppercase
 	term = strings.ToUpper(strings.TrimSpace(term))
-
-	// check if it is a valid search term
-	if !regexp.MustCompile(`^[A-Z0-9 :]*$`).MatchString(term) {
-		return nil, errors.New("search term must be either empty or only have characters ['A-Z', '0-9', ' ', ':']")
-	}
 
 	// reset search bool if searching again
 	if search.hasSearched {
